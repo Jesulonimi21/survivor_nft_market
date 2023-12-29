@@ -14,7 +14,7 @@ jobs:
       - run: yarn set version 1.22.19
       - run: yarn install --immutable
       - run: yarn lint
-      - working-directory: contracts
+        working-directory: contracts
 
   Start-LocalNet:
     runs-on: ubuntu-latest
