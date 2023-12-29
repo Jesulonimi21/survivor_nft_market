@@ -7,7 +7,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "tealish compile ./src/index.tl && tealish compile ./src/artist.tl && ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 jest",
+    "test": "ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 jest",
+    "testC": "tealish compile ./src/index.tl && tealish compile ./src/artist.tl && ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 jest",
     "lint:fix": "npx eslint --fix ./*/*.ts",
     "lint": "npx eslint ./*/*.ts"
   },
