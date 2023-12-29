@@ -11,8 +11,8 @@ jobs:
           node-version: "18"
           registry-url: "https://registry.npmjs.org"
       - name: Set working directory
-        run: cd subdirectory
-        working-directory: subdirectory
+        run: cd contracts
+        working-directory: contracts
 
       - name: install and lint
         run: |
