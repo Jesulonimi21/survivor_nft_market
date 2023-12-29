@@ -6,7 +6,7 @@ import {
   getIndexerClient, 
 } from "./utils";
 import fs from "fs";
-import algosdk, { ABIValue, Algodv2 } from "algosdk";
+import algosdk, { ABIValue } from "algosdk";
 import * as algokit from "@algorandfoundation/algokit-utils";
 import { SuggestedParamsWithMinFee } 
   from "algosdk/dist/types/types/transactions/base";
