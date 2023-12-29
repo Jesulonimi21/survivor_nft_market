@@ -10,11 +10,17 @@ jobs:
         with:
           node-version: "18"
           registry-url: "https://registry.npmjs.org"
-      - run: npm install -g yarn
-      - run: yarn set version 1.22.19
+      - name: Set working directory
+        run: cd subdirectory
+        working-directory: subdirectory
+
+      - name: install and lint
+        run: |
+          npm install -g yarn &&
+          yarn set version 1.22.19
       - run: yarn install --immutable
       - run: yarn lint
-        working-directory: contracts
+
 
   Start-LocalNet:
     runs-on: ubuntu-latest
