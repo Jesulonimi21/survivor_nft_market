@@ -16,7 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "^2.3.1",
+    "@algorandfoundation/algokit-utils": "2.3.1",
     "@types/bigint": "^5.5.32",
     "algosdk": "^2.4.0",
     "dotenv": "^16.3.1"
