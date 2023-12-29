@@ -1,0 +1,539 @@
+#pragma version 8
+
+
+// if Txn.ApplicationID == 0:
+  txn ApplicationID
+  pushint 0
+  ==
+  bz l0_end
+  // then:
+    // app_global_put("admin", Txn.Sender)
+    pushbytes "admin"
+    txn Sender
+    app_global_put
+    // app_global_put("owner", Txn.ApplicationArgs[0])
+    pushbytes "owner"
+    txna ApplicationArgs 0
+    app_global_put
+    // app_global_put("contract_state", NORMAL_STATE)
+    pushbytes "contract_state"
+    pushint 0 // NORMAL_STATE
+    app_global_put
+    // int gas_station_id = btoi(Txn.ApplicationArgs[1]) [slot 0]
+    txna ApplicationArgs 1
+    btoi
+    store 0 // gas_station_id
+    
+    // inner_txn:
+    itxn_begin
+      // TypeEnum: Appl
+      pushint 6 // Appl
+      itxn_field TypeEnum
+      // ApplicationID: gas_station_id
+      load 0 // gas_station_id
+      itxn_field ApplicationID
+      // Fee: 0
+      pushint 0
+      itxn_field Fee
+      // OnCompletion: NoOp
+      pushint 0 // NoOp
+      itxn_field OnCompletion
+      // ApplicationArgs[0]: method("withdraw()void")
+      method "withdraw()void"
+      itxn_field ApplicationArgs
+    itxn_submit
+    // end inner_txn
+    
+    // exit(1)
+    pushint 1
+    return
+  l0_end: // end
+
+
+// switch Txn.OnCompletion:
+txn OnCompletion
+pushint 0 // NoOp
+==
+bnz main
+txn OnCompletion
+pushint 1 // OptIn
+==
+bnz opt_in
+txn OnCompletion
+pushint 2 // CloseOut
+==
+bnz close_out
+txn OnCompletion
+pushint 4 // UpdateApplication
+==
+bnz update_app
+txn OnCompletion
+pushint 5 // DeleteApplication
+==
+bnz delete_app
+err // unexpected value
+
+
+// block main
+main:
+  // switch Txn.ApplicationArgs[0]:
+  txna ApplicationArgs 0
+  pushbytes "create_nft"
+  ==
+  bnz main__create_nft
+  txna ApplicationArgs 0
+  pushbytes "buy_nft"
+  ==
+  bnz main__buy_nft
+  txna ApplicationArgs 0
+  pushbytes "set_price"
+  ==
+  bnz main__set_price
+  b main__fail // else
+  
+  // block create_nft
+  main__create_nft:
+    // assert(Global.GroupSize == 2, "Maximum number of txns must be 2")
+    global GroupSize
+    pushint 2
+    ==
+    assert // Maximum number of txns must be 2
+    // assert(Gtxn[0].Receiver == Global.CurrentApplicationAddress, "Receiver must be the admin")
+    gtxn 0 Receiver
+    global CurrentApplicationAddress
+    ==
+    assert // Receiver must be the admin
+    // assert(Gtxn[0].Amount == 1000000, "Must send 1 algo to the Contract address")
+    gtxn 0 Amount
+    pushint 1000000
+    ==
+    assert // Must send 1 algo to the Contract address
+    // assert(Txn.Sender == app_global_get("admin"))
+    txn Sender
+    pushbytes "admin"
+    app_global_get
+    ==
+    assert
+    // bytes asset_owner = Gtxn[0].Sender [slot 1]
+    gtxn 0 Sender
+    store 1 // asset_owner
+    // int total_issuance = 1 [slot 2]
+    pushint 1
+    store 2 // total_issuance
+    // int decimals = 0 [slot 3]
+    pushint 0
+    store 3 // decimals
+    // int is_fractional_nft = btoi(Txn.ApplicationArgs[6]) [slot 4]
+    txna ApplicationArgs 6
+    btoi
+    store 4 // is_fractional_nft
+    // if is_fractional_nft == 1:
+      load 4 // is_fractional_nft
+      pushint 1
+      ==
+      bz l1_end
+      // then:
+        // total_issuance = 1000
+        pushint 1000
+        store 2 // total_issuance
+        // decimals = 3
+        pushint 3
+        store 3 // decimals
+      l1_end: // end
+    
+    // bytes asset_name = Txn.ApplicationArgs[1] [slot 5]
+    txna ApplicationArgs 1
+    store 5 // asset_name
+    // bytes metadata_harsh = Txn.ApplicationArgs[2] [slot 6]
+    txna ApplicationArgs 2
+    store 6 // metadata_harsh
+    // bytes asset_url = Txn.ApplicationArgs[3] [slot 7]
+    txna ApplicationArgs 3
+    store 7 // asset_url
+    // bytes unit_name = Txn.ApplicationArgs[4] [slot 8]
+    txna ApplicationArgs 4
+    store 8 // unit_name
+    // bytes admin = app_global_get("admin") [slot 9]
+    pushbytes "admin"
+    app_global_get
+    store 9 // admin
+    // int price = btoi(Txn.ApplicationArgs[5]) [slot 10]
+    txna ApplicationArgs 5
+    btoi
+    store 10 // price
+    // inner_txn:
+    itxn_begin
+      // TypeEnum: Acfg
+      pushint 3 // Acfg
+      itxn_field TypeEnum
+      // Fee: 0
+      pushint 0
+      itxn_field Fee
+      // ConfigAssetTotal: total_issuance
+      load 2 // total_issuance
+      itxn_field ConfigAssetTotal
+      // ConfigAssetDecimals: decimals
+      load 3 // decimals
+      itxn_field ConfigAssetDecimals
+      // ConfigAssetUnitName: unit_name
+      load 8 // unit_name
+      itxn_field ConfigAssetUnitName
+      // ConfigAssetName: asset_name
+      load 5 // asset_name
+      itxn_field ConfigAssetName
+      // ConfigAssetURL: asset_url
+      load 7 // asset_url
+      itxn_field ConfigAssetURL
+      // ConfigAssetMetadataHash: admin
+      load 9 // admin
+      itxn_field ConfigAssetMetadataHash
+      // ConfigAssetReserve: admin
+      load 9 // admin
+      itxn_field ConfigAssetReserve
+      // ConfigAssetFreeze: admin
+      load 9 // admin
+      itxn_field ConfigAssetFreeze
+      // ConfigAssetClawback: admin
+      load 9 // admin
+      itxn_field ConfigAssetClawback
+      // ConfigAssetManager: Global.CurrentApplicationAddress
+      global CurrentApplicationAddress
+      itxn_field ConfigAssetManager
+    itxn_submit
+    // end inner_txn
+    
+    // int created_asset_id = gitxn(0, CreatedAssetID) [slot 11]
+    gitxn 0 CreatedAssetID
+    store 11 // created_asset_id
+    // exit(1)
+    pushint 1
+    return
+  
+  
+  // block set_price
+  main__set_price:
+    // int price = btoi(Txn.ApplicationArgs[1]) [slot 1]
+    txna ApplicationArgs 1
+    btoi
+    store 1 // price
+    // int asset_id = btoi(Txn.ApplicationArgs[2]) [slot 2]
+    txna ApplicationArgs 2
+    btoi
+    store 2 // asset_id
+    // int asset_balance [slot 3]
+    // _, asset_balance = asset_holding_get(AssetBalance, Global.CurrentApplicationAddress, asset_id)
+    global CurrentApplicationAddress
+    load 2 // asset_id
+    asset_holding_get AssetBalance
+    pop // discarding value for _
+    store 3 // asset_balance
+    // assert(asset_balance >= 1, "The contract must hold the asset")
+    load 3 // asset_balance
+    pushint 1
+    >=
+    assert // The contract must hold the asset
+    // int box_exists [slot 4]
+    // int box_length [slot 5]
+    // box_exists, box_length = box_len(itob(asset_id))
+    load 2 // asset_id
+    itob
+    box_len
+    store 4 // box_exists
+    store 5 // box_length
+    // if box_length == 0:
+      load 5 // box_length
+      pushint 0
+      ==
+      bz l2_else
+      // then:
+        // box<NftData> nftMap = CreateBox(itob(asset_id)) [slot 6]
+        load 2 // asset_id
+        itob
+        dup
+        pushint 16
+        box_create
+        assert // assert created
+        store 6 // nftMap
+        // nftMap.price = price [box]
+        load 6 // box key nftMap
+        pushint 8 // offset
+        load 1 // price
+        itob
+        box_replace // nftMap.price
+        // nftMap.nft_id = asset_id [box]
+        load 6 // box key nftMap
+        pushint 0 // offset
+        load 2 // asset_id
+        itob
+        box_replace // nftMap.nft_id
+      b l2_end
+      l2_else:
+      // else:
+        // box<NftData> nftMap_ = OpenBox(itob(asset_id)) [slot 7]
+        load 2 // asset_id
+        itob
+        dup
+        box_len
+        assert // exists
+        pushint 16
+        ==
+        assert // len(box) == {self.struct_name}.size
+        store 7 // nftMap_
+        // nftMap_.price = price [box]
+        load 7 // box key nftMap_
+        pushint 8 // offset
+        load 1 // price
+        itob
+        box_replace // nftMap_.price
+        // nftMap_.nft_id = asset_id [box]
+        load 7 // box key nftMap_
+        pushint 0 // offset
+        load 2 // asset_id
+        itob
+        box_replace // nftMap_.nft_id
+      l2_end: // end
+    // exit(1)
+    pushint 1
+    return
+  
+  
+  // arg 1 = buyer address, 2 = quantity to buy, 3 = asset_id
+  // block buy_nft
+  main__buy_nft:
+    // bytes buyer = Txn.ApplicationArgs[1] [slot 1]
+    txna ApplicationArgs 1
+    store 1 // buyer
+    // int quantity = btoi(Txn.ApplicationArgs[2]) [slot 2]
+    txna ApplicationArgs 2
+    btoi
+    store 2 // quantity
+    // int asset_id = btoi(Txn.ApplicationArgs[3]) [slot 3]
+    txna ApplicationArgs 3
+    btoi
+    store 3 // asset_id
+    // assert(Gtxn[0].Receiver == Global.CurrentApplicationAddress, "Receiver must be the app address")
+    gtxn 0 Receiver
+    global CurrentApplicationAddress
+    ==
+    assert // Receiver must be the app address
+    // box<NftData> nft_map = OpenBox(itob(asset_id)) [slot 4]
+    load 3 // asset_id
+    itob
+    dup
+    box_len
+    assert // exists
+    pushint 16
+    ==
+    assert // len(box) == {self.struct_name}.size
+    store 4 // nft_map
+    // assert(nft_map.price != 0, "The nft price cannot be zero")
+    load 4 // box key nft_map
+    pushint 8 // offset
+    pushint 8 // size
+    box_extract // nft_map.price
+    btoi
+    pushint 0
+    !=
+    assert // The nft price cannot be zero
+    
+    // bytes box_key = concat(Txn.Sender, itob(asset_id)) [slot 5]
+    txn Sender
+    load 3 // asset_id
+    itob
+    concat
+    store 5 // box_key
+    // int box_exists [slot 6]
+    // int box_length [slot 7]
+    // box_exists, box_length = box_len(box_key)
+    load 5 // box_key
+    box_len
+    store 6 // box_exists
+    store 7 // box_length
+    // if box_length > 0:
+      load 7 // box_length
+      pushint 0
+      >
+      bz l3_else
+      // then:
+        // box<BuyerData> buyerData = OpenBox(box_key) [slot 8]
+        load 5 // box_key
+        dup
+        box_len
+        assert // exists
+        pushint 16
+        ==
+        assert // len(box) == {self.struct_name}.size
+        store 8 // buyerData
+        // buyerData.claim0 = 0 [box]
+        load 8 // box key buyerData
+        pushint 0 // offset
+        pushint 0
+        itob
+        box_replace // buyerData.claim0
+        // buyerData.quantity = buyerData.quantity + quantity [box]
+        load 8 // box key buyerData
+        pushint 8 // offset
+        load 8 // box key buyerData
+        pushint 8 // offset
+        pushint 8 // size
+        box_extract // buyerData.quantity
+        btoi
+        load 2 // quantity
+        +
+        itob
+        box_replace // buyerData.quantity
+      b l3_end
+      l3_else:
+      // else:
+        // box<BuyerData> buyerData_ = CreateBox(box_key) [slot 9]
+        load 5 // box_key
+        dup
+        pushint 16
+        box_create
+        assert // assert created
+        store 9 // buyerData_
+        // buyerData_.claim0 = 0 [box]
+        load 9 // box key buyerData_
+        pushint 0 // offset
+        pushint 0
+        itob
+        box_replace // buyerData_.claim0
+        // buyerData_.quantity = quantity [box]
+        load 9 // box key buyerData_
+        pushint 8 // offset
+        load 2 // quantity
+        itob
+        box_replace // buyerData_.quantity
+      l3_end: // end
+    
+    //send the payment to the contract
+    // int payment_amount = nft_map.price * quantity [slot 10]
+    load 4 // box key nft_map
+    pushint 8 // offset
+    pushint 8 // size
+    box_extract // nft_map.price
+    btoi
+    load 2 // quantity
+    *
+    store 10 // payment_amount
+    // assert(Gtxn[0].Amount == (payment_amount + 10000), "Must send make payment to the owner")
+    gtxn 0 Amount
+    load 10 // payment_amount
+    pushint 10000
+    +
+    ==
+    assert // Must send make payment to the owner
+    // inner_group:
+      itxn_begin
+      // inner_txn:
+        // TypeEnum: Axfer
+        pushint 4 // Axfer
+        itxn_field TypeEnum
+        // AssetReceiver: buyer
+        load 1 // buyer
+        itxn_field AssetReceiver
+        // AssetAmount: quantity
+        load 2 // quantity
+        itxn_field AssetAmount
+        // XferAsset: asset_id
+        load 3 // asset_id
+        itxn_field XferAsset
+        // Fee: 0
+        pushint 0
+        itxn_field Fee
+      // end inner_txn
+      // inner_txn:
+      itxn_next
+        // TypeEnum: Pay
+        pushint 1 // Pay
+        itxn_field TypeEnum
+        // Receiver: app_global_get("owner")
+        pushbytes "owner"
+        app_global_get
+        itxn_field Receiver
+        // Amount: payment_amount
+        load 10 // payment_amount
+        itxn_field Amount
+        // Fee: 0
+        pushint 0
+        itxn_field Fee
+      // end inner_txn
+      itxn_submit
+    // end inner_group
+    // exit(1)
+    pushint 1
+    return
+  
+  
+  // block fail
+  main__fail:
+    // exit(0)
+    pushint 0
+    return
+
+
+// block opt_in
+opt_in:
+  // exit(1)
+  pushint 1
+  return
+
+// block close_out
+close_out:
+  // exit(1)
+  pushint 1
+  return
+
+// block update_app
+update_app:
+  // if Txn.Sender == app_global_get("admin"):
+    txn Sender
+    pushbytes "admin"
+    app_global_get
+    ==
+    bz l4_end
+    // then:
+      // exit(1)
+      pushint 1
+      return
+    l4_end: // end
+  
+  // exit(0)
+  pushint 0
+  return
+
+
+// block delete_app
+delete_app:
+  // if Txn.Sender == app_global_get("admin"):
+    txn Sender
+    pushbytes "admin"
+    app_global_get
+    ==
+    bz l5_end
+    // then:
+      // exit(1)
+      pushint 1
+      return
+    l5_end: // end
+  
+  // exit(0)
+  pushint 0
+  return
+
+
+
+
+
+
+
+//store the artist that created the nft in the metadata.json* really important for purchasing NFT
+
+
+//each Artist calls create_nft
+//    if user has artist_app, call create_nft in his artist_app
+//    if not, create a artist_app for that user and call create_nft in that app
+
+
+//listing an nft
+//reading a users box, reading his user_app and then all the assets created by him

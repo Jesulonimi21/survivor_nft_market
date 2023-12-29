@@ -1,0 +1,35 @@
+{
+  "name": "contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "tealish compile ./src/index.tl && tealish compile ./src/artist.tl && ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 jest",
+    "lint:fix": "npx eslint --fix ./*/*.ts",
+    "lint": "npx eslint ./*/*.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@algorandfoundation/algokit-utils": "^2.3.1",
+    "@types/bigint": "^5.5.32",
+    "algosdk": "^2.4.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jest": "^27.6.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-typescript": "^0.14.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1"
+  }
+}

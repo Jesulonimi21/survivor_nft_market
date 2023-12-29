@@ -1,0 +1,417 @@
+#pragma version 8
+
+
+
+
+
+// if Txn.ApplicationID == 0:
+  txn ApplicationID
+  pushint 0
+  ==
+  bz l0_end
+  // then:
+    // app_global_put("admin", Txn.Sender)
+    pushbytes "admin"
+    txn Sender
+    app_global_put
+    // app_global_put("contract_state", NORMAL_STATE)
+    pushbytes "contract_state"
+    pushint 0 // NORMAL_STATE
+    app_global_put
+    // app_global_put("gas_station_id", btoi(Txn.ApplicationArgs[0]))
+    pushbytes "gas_station_id"
+    txna ApplicationArgs 0
+    btoi
+    app_global_put
+    // app_global_put("gas_station_address", Txn.ApplicationArgs[1])
+    pushbytes "gas_station_address"
+    txna ApplicationArgs 1
+    app_global_put
+    // exit(1)
+    pushint 1
+    return
+  l0_end: // end
+
+
+// switch Txn.OnCompletion:
+txn OnCompletion
+pushint 0 // NoOp
+==
+bnz main
+txn OnCompletion
+pushint 1 // OptIn
+==
+bnz opt_in
+txn OnCompletion
+pushint 2 // CloseOut
+==
+bnz close_out
+txn OnCompletion
+pushint 4 // UpdateApplication
+==
+bnz update_app
+txn OnCompletion
+pushint 5 // DeleteApplication
+==
+bnz delete_app
+err // unexpected value
+
+
+
+
+// block main
+main:
+  // switch Txn.ApplicationArgs[0]:
+  txna ApplicationArgs 0
+  pushbytes "create_nft"
+  ==
+  bnz main__create_nft
+  txna ApplicationArgs 0
+  pushbytes "assets_opt_in"
+  ==
+  bnz main__assets_opt_in
+  b main__fail // else
+  //0 = "create_nft" 1 = asset_name
+  // block create_nft
+  main__create_nft:
+    // assert(Global.GroupSize == 2, "Maximum number of txns must be 2")
+    global GroupSize
+    pushint 2
+    ==
+    assert // Maximum number of txns must be 2
+    // assert(Gtxn[0].Receiver == Global.CurrentApplicationAddress, "Receiver must be the admin")
+    gtxn 0 Receiver
+    global CurrentApplicationAddress
+    ==
+    assert // Receiver must be the admin
+    // assert(Gtxn[0].Amount == 1000000, "Must send 1 algo to the Contract address")
+    gtxn 0 Amount
+    pushint 1000000
+    ==
+    assert // Must send 1 algo to the Contract address
+    // assert(Txn.Sender == app_global_get("admin"))
+    txn Sender
+    pushbytes "admin"
+    app_global_get
+    ==
+    assert
+    // bytes admin = app_global_get("admin") [slot 0]
+    pushbytes "admin"
+    app_global_get
+    store 0 // admin
+    // box<ArtistByteCode> artist_teal_map = OpenBox(Global.CurrentApplicationAddress) [slot 1]
+    global CurrentApplicationAddress
+    dup
+    box_len
+    assert // exists
+    pushint 904
+    ==
+    assert // len(box) == {self.struct_name}.size
+    store 1 // artist_teal_map
+    // bytes approval = artist_teal_map.artist_approval [slot 2]
+    load 1 // box key artist_teal_map
+    pushint 0 // offset
+    pushint 900 // size
+    box_extract // artist_teal_map.artist_approval
+    store 2 // approval
+    // bytes clear = artist_teal_map.artist_clear [slot 3]
+    load 1 // box key artist_teal_map
+    pushint 900 // offset
+    pushint 4 // size
+    box_extract // artist_teal_map.artist_clear
+    store 3 // clear
+    // bytes asset_owner = Gtxn[0].Sender [slot 4]
+    gtxn 0 Sender
+    store 4 // asset_owner
+    // int total_issuance = 1 [slot 5]
+    pushint 1
+    store 5 // total_issuance
+    // int decimals = 3 [slot 6]
+    pushint 3
+    store 6 // decimals
+    // bytes asset_name = Txn.ApplicationArgs[1] [slot 7]
+    txna ApplicationArgs 1
+    store 7 // asset_name
+    // bytes metadata_hash = Txn.ApplicationArgs[2] [slot 8]
+    txna ApplicationArgs 2
+    store 8 // metadata_hash
+    // bytes asset_url = Txn.ApplicationArgs[3] [slot 9]
+    txna ApplicationArgs 3
+    store 9 // asset_url
+    // bytes unit_name = Txn.ApplicationArgs[4] [slot 10]
+    txna ApplicationArgs 4
+    store 10 // unit_name
+    // bytes artist = Gtxn[0].Sender [slot 11]
+    gtxn 0 Sender
+    store 11 // artist
+    // int price = btoi(Txn.ApplicationArgs[5]) [slot 12]
+    txna ApplicationArgs 5
+    btoi
+    store 12 // price
+    // int is_fractional_nft = btoi(Txn.ApplicationArgs[6]) [slot 13]
+    txna ApplicationArgs 6
+    btoi
+    store 13 // is_fractional_nft
+    
+    // int box_exists [slot 14]
+    // int box_length [slot 15]
+    // box_exists, box_length = box_len(Txn.Sender)
+    txn Sender
+    box_len
+    store 14 // box_exists
+    store 15 // box_length
+    // int artist_app = 0 [slot 16]
+    pushint 0
+    store 16 // artist_app
+    // if box_length == 0:
+      load 15 // box_length
+      pushint 0
+      ==
+      bz l1_else
+      // then:
+        // create and fund new contract
+        // inner_group:
+          itxn_begin
+          // inner_txn:
+            // TypeEnum: Pay
+            pushint 1 // Pay
+            itxn_field TypeEnum
+            // Receiver: app_global_get("gas_station_address")
+            pushbytes "gas_station_address"
+            app_global_get
+            itxn_field Receiver
+            // Amount: 500000
+            pushint 500000
+            itxn_field Amount
+            // Fee: 0
+            pushint 0
+            itxn_field Fee
+          // end inner_txn
+          // inner_txn:
+          itxn_next
+            // TypeEnum: Appl
+            pushint 6 // Appl
+            itxn_field TypeEnum
+            // ApprovalProgram: approval
+            load 2 // approval
+            itxn_field ApprovalProgram
+            // ClearStateProgram: clear
+            load 3 // clear
+            itxn_field ClearStateProgram
+            // OnCompletion: NoOp
+            pushint 0 // NoOp
+            itxn_field OnCompletion
+            // Applications[0]: app_global_get("gas_station_id")
+            pushbytes "gas_station_id"
+            app_global_get
+            itxn_field Applications
+            // GlobalNumUint: 3
+            pushint 3
+            itxn_field GlobalNumUint
+            // GlobalNumByteSlice: 2
+            pushint 2
+            itxn_field GlobalNumByteSlice
+            // ApplicationArgs[0]: artist
+            load 11 // artist
+            itxn_field ApplicationArgs
+            // ApplicationArgs[1]: itob(app_global_get("gas_station_id"))
+            pushbytes "gas_station_id"
+            app_global_get
+            itob
+            itxn_field ApplicationArgs
+            // Accounts[0]: Global.CurrentApplicationAddress
+            global CurrentApplicationAddress
+            itxn_field Accounts
+            // Accounts[1]: app_global_get("gas_station_address")
+            pushbytes "gas_station_address"
+            app_global_get
+            itxn_field Accounts
+            // Fee: 0
+            pushint 0
+            itxn_field Fee
+          // end inner_txn
+          itxn_submit
+        // end inner_group
+        // artist_app = gitxn(1, CreatedApplicationID)
+        gitxn 1 CreatedApplicationID
+        store 16 // artist_app
+        // box<ArtistData> artist_app_map = CreateBox(artist) [slot 17]
+        load 11 // artist
+        dup
+        pushint 8
+        box_create
+        assert // assert created
+        store 17 // artist_app_map
+        // artist_app_map.app = artist_app [box]
+        load 17 // box key artist_app_map
+        pushint 0 // offset
+        load 16 // artist_app
+        itob
+        box_replace // artist_app_map.app
+      b l1_end
+      l1_else:
+      // else:
+        // box<ArtistData> artist_app_map_ = OpenBox(artist) [slot 18]
+        load 11 // artist
+        dup
+        box_len
+        assert // exists
+        pushint 8
+        ==
+        assert // len(box) == {self.struct_name}.size
+        store 18 // artist_app_map_
+        // artist_app = artist_app_map_.app
+        load 18 // box key artist_app_map_
+        pushint 0 // offset
+        pushint 8 // size
+        box_extract // artist_app_map_.app
+        btoi
+        store 16 // artist_app
+      l1_end: // end
+    
+    // bytes artist_app_address [slot 19]
+    // _, artist_app_address = app_params_get(AppAddress, artist_app)
+    load 16 // artist_app
+    app_params_get AppAddress
+    pop // discarding value for _
+    store 19 // artist_app_address
+    
+    // inner_group:
+      itxn_begin
+      // inner_txn:
+        // TypeEnum: Pay
+        pushint 1 // Pay
+        itxn_field TypeEnum
+        // Receiver: artist_app_address
+        load 19 // artist_app_address
+        itxn_field Receiver
+        // Amount: 1000000
+        pushint 1000000
+        itxn_field Amount
+        // Fee: 0
+        pushint 0
+        itxn_field Fee
+      // end inner_txn
+      // inner_txn:
+      itxn_next
+        // TypeEnum: Appl
+        pushint 6 // Appl
+        itxn_field TypeEnum
+        // OnCompletion: NoOp
+        pushint 0 // NoOp
+        itxn_field OnCompletion
+        // ApplicationID: artist_app
+        load 16 // artist_app
+        itxn_field ApplicationID
+        // ApplicationArgs[0]: "create_nft"
+        pushbytes "create_nft"
+        itxn_field ApplicationArgs
+        // ApplicationArgs[1]: asset_name
+        load 7 // asset_name
+        itxn_field ApplicationArgs
+        // ApplicationArgs[2]: metadata_hash
+        load 8 // metadata_hash
+        itxn_field ApplicationArgs
+        // ApplicationArgs[3]: asset_url
+        load 9 // asset_url
+        itxn_field ApplicationArgs
+        // ApplicationArgs[4]: unit_name
+        load 10 // unit_name
+        itxn_field ApplicationArgs
+        // ApplicationArgs[5]: itob(price)
+        load 12 // price
+        itob
+        itxn_field ApplicationArgs
+        // ApplicationArgs[6]: itob(is_fractional_nft)
+        load 13 // is_fractional_nft
+        itob
+        itxn_field ApplicationArgs
+        // Fee: 0
+        pushint 0
+        itxn_field Fee
+      // end inner_txn
+      itxn_submit
+    // end inner_group
+    // exit(1)
+    pushint 1
+    return
+  
+  // block fail
+  main__fail:
+    // exit(0)
+    pushint 0
+    return
+  
+  
+  // block assets_opt_in
+  main__assets_opt_in:
+    // box<ArtistByteCode> artist_teal_map = CreateBox(Global.CurrentApplicationAddress) [slot 0]
+    global CurrentApplicationAddress
+    dup
+    pushint 904
+    box_create
+    assert // assert created
+    store 0 // artist_teal_map
+    // artist_teal_map.artist_approval = Txn.ApplicationArgs[1] [box]
+    load 0 // box key artist_teal_map
+    pushint 0 // offset
+    txna ApplicationArgs 1
+    box_replace // artist_teal_map.artist_approval
+    // artist_teal_map.artist_clear = Txn.ApplicationArgs[2] [box]
+    load 0 // box key artist_teal_map
+    pushint 900 // offset
+    txna ApplicationArgs 2
+    box_replace // artist_teal_map.artist_clear
+    // exit(1)
+    pushint 1
+    return
+
+
+// block opt_in
+opt_in:
+  // exit(1)
+  pushint 1
+  return
+
+// block close_out
+close_out:
+  // exit(1)
+  pushint 1
+  return
+
+// block update_app
+update_app:
+  // if Txn.Sender == app_global_get("admin"):
+    txn Sender
+    pushbytes "admin"
+    app_global_get
+    ==
+    bz l2_end
+    // then:
+      // exit(1)
+      pushint 1
+      return
+    l2_end: // end
+  
+  // exit(0)
+  pushint 0
+  return
+
+
+// block delete_app
+delete_app:
+  // if Txn.Sender == app_global_get("admin"):
+    txn Sender
+    pushbytes "admin"
+    app_global_get
+    ==
+    bz l3_end
+    // then:
+      // exit(1)
+      pushint 1
+      return
+    l3_end: // end
+  
+  // exit(0)
+  pushint 0
+  return
