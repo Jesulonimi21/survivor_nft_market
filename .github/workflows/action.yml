@@ -13,10 +13,8 @@ jobs:
 
       - name: install and lint
         run: |
-          npm install -g yarn &&
-          yarn set version 1.22.19 &&
-          yarn install --immutable &&
-          yarn lint
+          npm install &&
+          npm run lint
         working-directory: contracts
 
 
