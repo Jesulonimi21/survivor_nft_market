@@ -6,11 +6,10 @@ import {
   getIndexerClient, 
 } from "./utils";
 import fs from "fs";
-import algosdk, { ABIAddressType, ABIValue } from "algosdk";
+import algosdk, { ABIValue } from "algosdk";
 import * as algokit from "@algorandfoundation/algokit-utils";
 import { SuggestedParamsWithMinFee } 
   from "algosdk/dist/types/types/transactions/base";
-import { Account } from "algosdk/dist/types/client/v2/algod/models/types";
 
   
 
