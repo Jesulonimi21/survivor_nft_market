@@ -3,6 +3,7 @@
 struct NftData:
     nft_id: int
     price: int
+    owner: bytes[32]
 end
 
 struct BuyerData:
@@ -42,6 +43,7 @@ block main:
         "create_nft": create_nft
         "buy_nft": buy_nft
         "set_price": set_price
+        "resell_nft": resell_nft
         else: fail
    end
 
@@ -50,7 +52,7 @@ block main:
         assert(Gtxn[0].Receiver == Global.CurrentApplicationAddress, "Receiver must be the admin")
         assert(Gtxn[0].Amount == 1000000, "Must send 1 algo to the Contract address")
         assert(Txn.Sender == app_global_get("admin"))
-        bytes asset_owner = Gtxn[0].Sender 
+        bytes asset_owner = Txn.ApplicationArgs[7]
         int total_issuance = 1
         int decimals = 0
         int is_fractional_nft = btoi(Txn.ApplicationArgs[6])
@@ -95,13 +97,15 @@ block main:
         int box_length
         box_exists, box_length = box_len(itob(asset_id))
         if box_length == 0:
-            box<NftData> nftMap = CreateBox(itob(asset_id))
-            nftMap.price = price
-            nftMap.nft_id = asset_id
+            box<NftData> nft_map = CreateBox(itob(asset_id))
+            nft_map.price = price
+            nft_map.nft_id = asset_id
+            nft_map.owner = app_global_get("owner")
         else:
-            box<NftData> nftMap_ = OpenBox(itob(asset_id))
-            nftMap_.price = price
-            nftMap_.nft_id = asset_id
+            assert(nft_map.owner == Txn.Sender)
+            box<NftData> nft_map_ = OpenBox(itob(asset_id))
+            nft_map_.price = price
+            nft_map_.nft_id = asset_id
         end
         exit(1)
     end
@@ -115,7 +119,6 @@ block main:
         assert(Gtxn[0].Receiver == Global.CurrentApplicationAddress, "Receiver must be the app address")
         box<NftData> nft_map = OpenBox(itob(asset_id))
         assert(nft_map.price != 0, "The nft price cannot be zero")
-
         bytes box_key = concat(Txn.Sender, itob(asset_id))
         int box_exists
         int box_length
@@ -132,7 +135,7 @@ block main:
         
         #send the payment to the contract
         int payment_amount = nft_map.price * quantity
-        assert(Gtxn[0].Amount == (payment_amount + 10000), "Must send make payment to the owner")
+        assert(Gtxn[0].Amount == (payment_amount + 10000), "Payment amount equal payment amount plus fees")
         inner_group:
             inner_txn:
                 TypeEnum: Axfer
@@ -143,11 +146,31 @@ block main:
             end
             inner_txn:
                 TypeEnum: Pay
-                Receiver: app_global_get("owner")
+                Receiver: nft_map.owner
                 Amount: payment_amount
                 Fee: 0
             end
         end
+        nft_map.owner = buyer
+        exit(1)
+    end
+
+
+    block resell_nft:
+        assert(Gtxn[0].AssetAmount == 1, "AssetAmount must equal 1")
+        int asset_id = Gtxn[0].XferAsset
+        int box_exists
+        int box_length
+        box_exists, box_length = box_len(itob(asset_id))
+        # remove if you want any kind of nft to be put up for sale
+        assert(box_length > 0, "nft was not created by artist")
+        int price = btoi(Txn.ApplicationArgs[1])
+        assert(price > 0, "selling price must be greater than zero")
+        box<NftData> nft_map = OpenBox(itob(asset_id))
+        nft_map.owner = Txn.Sender
+        assert(Global.GroupSize == 2, "Maximum number of txns must be 2")
+        assert(Gtxn[0].AssetReceiver == Global.CurrentApplicationAddress, "the receiver must be the current application address")
+        assert(Gtxn[0].AssetSender != Global.CurrentApplicationAddress, "the sender must not be the app address")
         exit(1)
     end
 

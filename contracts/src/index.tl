@@ -55,13 +55,12 @@ block main:
         bytes metadata_hash = Txn.ApplicationArgs[2]
         bytes asset_url = Txn.ApplicationArgs[3]
         bytes unit_name = Txn.ApplicationArgs[4]
-        bytes artist = Gtxn[0].Sender
         int price = btoi(Txn.ApplicationArgs[5])
         int is_fractional_nft = btoi(Txn.ApplicationArgs[6])
-        
+        bytes artist = Txn.ApplicationArgs[7]
         int box_exists
         int box_length
-        box_exists, box_length = box_len(Txn.Sender)
+        box_exists, box_length = box_len(artist)
         int artist_app = 0
         if box_length == 0:
             # create and fund new contract
@@ -116,6 +115,7 @@ block main:
                 ApplicationArgs[4]: unit_name
                 ApplicationArgs[5]: itob(price)
                 ApplicationArgs[6]: itob(is_fractional_nft)
+                ApplicationArgs[7]: artist
                 Fee: 0
             end
         end

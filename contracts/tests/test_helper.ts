@@ -6,10 +6,11 @@ import {
   getIndexerClient, 
 } from "./utils";
 import fs from "fs";
-import algosdk, { ABIValue } from "algosdk";
+import algosdk, { ABIAddressType, ABIValue } from "algosdk";
 import * as algokit from "@algorandfoundation/algokit-utils";
 import { SuggestedParamsWithMinFee } 
   from "algosdk/dist/types/types/transactions/base";
+import { Account } from "algosdk/dist/types/client/v2/algod/models/types";
 
   
 
@@ -137,7 +138,7 @@ const create_nft = async(gasStationId: number, nftContractId: number,
   const assetURL = "http://testurl";
   const assetMetadataHash = "16efaa3924a6fd9d3a4824799a4ac65d";
   const price = algosdk.encodeUint64(1000);
-  const isFractionalNft = algosdk.encodeUint64(1);
+  const isFractionalNft = algosdk.encodeUint64(0);
   const balanceForBoxCreated = 0;
   const appArgs = [
     textEncoder.encode(Buffer.from("create_nft").toString()),
@@ -146,7 +147,8 @@ const create_nft = async(gasStationId: number, nftContractId: number,
     textEncoder.encode(Buffer.from(assetURL).toString()),
     textEncoder.encode(Buffer.from(unitName).toString()),
     price,
-    isFractionalNft
+    isFractionalNft,
+    algosdk.decodeAddress(artistAccount.addr).publicKey
   ];
   const from = artistAccount.addr;
   const client = getClient();
@@ -154,7 +156,7 @@ const create_nft = async(gasStationId: number, nftContractId: number,
     .getTransactionParams()
     .do();
   const txFundTxn = algosdk.makePaymentTxnWithSuggestedParams(
-    from,
+    artistAccount.addr,
     algosdk.getApplicationAddress(nftContractId),
     balanceForBoxCreated + 1000000,
     undefined,
@@ -170,7 +172,7 @@ const create_nft = async(gasStationId: number, nftContractId: number,
   }
   const strType = algosdk.ABIAddressType.from("address");
   const appCallTxn = algosdk.makeApplicationNoOpTxn(
-    from,
+    creatorAccount.addr,
     { ...params, fee: params.minFee },
     nftContractId,
     appArgs,
@@ -207,7 +209,7 @@ const create_nft = async(gasStationId: number, nftContractId: number,
   });
   atc.addTransaction({
     txn: appCallTxn,
-    signer: algosdk.makeBasicAccountTransactionSigner(artistAccount),
+    signer: algosdk.makeBasicAccountTransactionSigner(creatorAccount),
   });
 
   const stxns = (await atc.gatherSignatures()).map((stxn) => stxn);
@@ -219,19 +221,19 @@ const create_nft = async(gasStationId: number, nftContractId: number,
 };
 
 
-const set_price = async (assetId: number, artistAppId:number,
+const set_price = async (price: number, assetId: number, artistAppId:number,
   artistAccount = creatorAccount) => {
   // const assetIDBytes = uint64ToBigEndianByteArray(BigInt(assetId));
   const foreignAssetsArray = [assetId];
   const foreignApps = undefined;
-  const from = creatorAccount.addr;
+  const from = artistAccount.addr;
   const client = getClient();
   const params: SuggestedParamsWithMinFee = await client
     .getTransactionParams()
     .do();
   const appArgs = [
     textEncoder.encode(Buffer.from("set_price").toString()),
-    algosdk.encodeUint64(10000),
+    algosdk.encodeUint64(price),
     algosdk.encodeUint64(assetId)
   ];
   const appCallTxn = algosdk.makeApplicationNoOpTxn(
@@ -265,6 +267,31 @@ const set_price = async (assetId: number, artistAppId:number,
   console.log({ set_price: txTest });
 };
 
+
+const readNftData = 
+  async(appId: number, nftId: number): Promise<{nftId: number,
+     price: number, owner: string}> =>{
+    const boxName = algosdk.encodeUint64(nftId);
+    const boxValue = await algokit.getAppBoxValue(
+      appId,
+      boxName,
+      getClient()
+    );
+    const tupleCodec = new algosdk.ABITupleType([
+      new algosdk.ABIUintType(64),
+      new algosdk.ABIUintType(64),
+      new algosdk.ABIAddressType(),
+    ]);
+    const decodedBoxValue: ABIValue[] = tupleCodec.decode(
+      boxValue
+    ) as ABIValue[];
+    
+    return{
+      nftId: Number(decodedBoxValue[0]),
+      price: Number(decodedBoxValue[1]),
+      owner: decodedBoxValue[2] as string
+    };
+  };
 
 
 const optContractIntoAssets = async (
@@ -325,7 +352,8 @@ const optContractIntoAssets = async (
 const getAssetsForAddress = async (
   nftContractId: number,
   address: string = creatorAccount.addr
-) => {
+):Promise<{assets: 
+  [{assetId?: number; isFractionalft?: boolean}?], app: number}> => {
   try {
     const client = getClient();
     const boxName = algosdk.decodeAddress(address).publicKey;
@@ -334,7 +362,7 @@ const getAssetsForAddress = async (
       boxName,
       client
     );
-    const tupleCodec = new algosdk.ABITupleType([new algosdk.ABIUintType(64)]);
+    const tupleCodec = new algosdk.ABITupleType([new algosdk.ABIUintType(64) ]);
     const decodedBoxValue: ABIValue[] = tupleCodec.decode(
       boxValue
     ) as ABIValue[];
@@ -365,6 +393,8 @@ const buy_nft = async (
   assetId: number,
   artistId: number,
   quantity: number,
+  price: number,
+  owner: string,
   buyer: algosdk.Account = creatorAccount
 ) => {
   const strType = algosdk.ABIAddressType.from("address");
@@ -382,7 +412,7 @@ const buy_nft = async (
   const txFundTxn = algosdk.makePaymentTxnWithSuggestedParams(
     from,
     algosdk.getApplicationAddress(artistId),
-    50000,
+    price + 10000,
     undefined,
     undefined,
     params
@@ -398,7 +428,7 @@ const buy_nft = async (
     { ...params, fee: params.minFee },
     artistId,
     appArgs,
-    undefined,
+    [from, owner],
     undefined,
     [assetId],
     undefined,
@@ -460,10 +490,105 @@ const optAccountIntoAsset = async (
   console.log({ optAccountIntoAsset: txTest });
 };
 
+const fundAccount = async(account: algosdk.Account, amount:number = 100 ) =>{
+  await algokit.ensureFunded(
+    {
+      accountToFund: account.addr,
+      minSpendingBalance: algokit.algos(amount),
+    },
+    getClient()
+  );
+};
 
-export { createGasStation, 
-  create_nft_contract, 
-  optContractIntoAssets, 
+const getBalance = async (
+  address: string,
+  assetId: number
+): Promise<number> => {
+  const client = getClient();
+  const accountInfo = await client.accountInformation(address).do();
+  const assets = accountInfo.assets;
+  let assetBalance = 0;
+
+  if (assetId === 0) {
+    return accountInfo.amount;
+  }
+
+  assets.forEach((asset: Record<string, number>) => {
+    if (asset["asset-id"] === assetId) {
+      assetBalance = asset["amount"];
+    }
+  });
+
+  return assetBalance;
+};
+
+const sellNft = async(appId: number,
+  nftId: number, price: number,
+  sellerAccount: algosdk.Account = creatorAccount) =>{
+  const from = sellerAccount.addr;
+  const client = getClient();
+  const params = await client.getTransactionParams().do();
+  const appArgs = [
+    textEncoder.encode(Buffer.from("resell_nft").toString()),
+    algosdk.encodeUint64(price)
+    
+  ];
+  const assetSendTxn1 = algosdk.makeAssetTransferTxnWithSuggestedParams(
+    from,
+    algosdk.getApplicationAddress(appId),
+    undefined,
+    undefined,
+    1,
+    undefined,
+    nftId,
+    params
+  );
+  
+  const appCallTxn = algosdk.makeApplicationNoOpTxn(
+    from,
+    { ...params, fee: params.minFee },
+    appId,
+    appArgs,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    [
+      {
+        appIndex: appId,
+        name: algosdk.encodeUint64(nftId),
+      },
+    ]
+  );
+
+  const atc = new algosdk.AtomicTransactionComposer();
+  atc.addTransaction({
+    txn: assetSendTxn1,
+    signer: algosdk.makeBasicAccountTransactionSigner(sellerAccount),
+  });
+  atc.addTransaction({
+    txn: appCallTxn,
+    signer: algosdk.makeBasicAccountTransactionSigner(sellerAccount),
+  });
+  const stxns = (await atc.gatherSignatures()).map((stxn) => stxn);
+  const txTest = await client.sendRawTransaction(stxns).do();
+  console.log({ assetSold: txTest });
+};
+
+
+export {
+  createGasStation,
+  create_nft_contract,
+  optContractIntoAssets,
   getAssetsForAddress,
-  create_nft, set_price,
-  buy_nft, optAccountIntoAsset };
+  create_nft,
+  set_price,
+  buy_nft,
+  optAccountIntoAsset,
+  fundAccount,
+  readNftData,
+  getBalance,
+  sellNft
+};

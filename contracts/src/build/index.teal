@@ -141,22 +141,21 @@ main:
     // bytes unit_name = Txn.ApplicationArgs[4] [slot 10]
     txna ApplicationArgs 4
     store 10 // unit_name
-    // bytes artist = Gtxn[0].Sender [slot 11]
-    gtxn 0 Sender
-    store 11 // artist
-    // int price = btoi(Txn.ApplicationArgs[5]) [slot 12]
+    // int price = btoi(Txn.ApplicationArgs[5]) [slot 11]
     txna ApplicationArgs 5
     btoi
-    store 12 // price
-    // int is_fractional_nft = btoi(Txn.ApplicationArgs[6]) [slot 13]
+    store 11 // price
+    // int is_fractional_nft = btoi(Txn.ApplicationArgs[6]) [slot 12]
     txna ApplicationArgs 6
     btoi
-    store 13 // is_fractional_nft
-    
+    store 12 // is_fractional_nft
+    // bytes artist = Txn.ApplicationArgs[7] [slot 13]
+    txna ApplicationArgs 7
+    store 13 // artist
     // int box_exists [slot 14]
     // int box_length [slot 15]
-    // box_exists, box_length = box_len(Txn.Sender)
-    txn Sender
+    // box_exists, box_length = box_len(artist)
+    load 13 // artist
     box_len
     store 14 // box_exists
     store 15 // box_length
@@ -212,7 +211,7 @@ main:
             pushint 2
             itxn_field GlobalNumByteSlice
             // ApplicationArgs[0]: artist
-            load 11 // artist
+            load 13 // artist
             itxn_field ApplicationArgs
             // ApplicationArgs[1]: itob(app_global_get("gas_station_id"))
             pushbytes "gas_station_id"
@@ -236,7 +235,7 @@ main:
         gitxn 1 CreatedApplicationID
         store 16 // artist_app
         // box<ArtistData> artist_app_map = CreateBox(artist) [slot 17]
-        load 11 // artist
+        load 13 // artist
         dup
         pushint 8
         box_create
@@ -252,7 +251,7 @@ main:
       l1_else:
       // else:
         // box<ArtistData> artist_app_map_ = OpenBox(artist) [slot 18]
-        load 11 // artist
+        load 13 // artist
         dup
         box_len
         assert // exists
@@ -319,12 +318,15 @@ main:
         load 10 // unit_name
         itxn_field ApplicationArgs
         // ApplicationArgs[5]: itob(price)
-        load 12 // price
+        load 11 // price
         itob
         itxn_field ApplicationArgs
         // ApplicationArgs[6]: itob(is_fractional_nft)
-        load 13 // is_fractional_nft
+        load 12 // is_fractional_nft
         itob
+        itxn_field ApplicationArgs
+        // ApplicationArgs[7]: artist
+        load 13 // artist
         itxn_field ApplicationArgs
         // Fee: 0
         pushint 0

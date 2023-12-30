@@ -89,6 +89,10 @@ main:
   pushbytes "set_price"
   ==
   bnz main__set_price
+  txna ApplicationArgs 0
+  pushbytes "resell_nft"
+  ==
+  bnz main__resell_nft
   b main__fail // else
   
   // block create_nft
@@ -114,8 +118,8 @@ main:
     app_global_get
     ==
     assert
-    // bytes asset_owner = Gtxn[0].Sender [slot 1]
-    gtxn 0 Sender
+    // bytes asset_owner = Txn.ApplicationArgs[7] [slot 1]
+    txna ApplicationArgs 7
     store 1 // asset_owner
     // int total_issuance = 1 [slot 2]
     pushint 1
@@ -246,51 +250,65 @@ main:
       ==
       bz l2_else
       // then:
-        // box<NftData> nftMap = CreateBox(itob(asset_id)) [slot 6]
+        // box<NftData> nft_map = CreateBox(itob(asset_id)) [slot 6]
         load 2 // asset_id
         itob
         dup
-        pushint 16
+        pushint 48
         box_create
         assert // assert created
-        store 6 // nftMap
-        // nftMap.price = price [box]
-        load 6 // box key nftMap
+        store 6 // nft_map
+        // nft_map.price = price [box]
+        load 6 // box key nft_map
         pushint 8 // offset
         load 1 // price
         itob
-        box_replace // nftMap.price
-        // nftMap.nft_id = asset_id [box]
-        load 6 // box key nftMap
+        box_replace // nft_map.price
+        // nft_map.nft_id = asset_id [box]
+        load 6 // box key nft_map
         pushint 0 // offset
         load 2 // asset_id
         itob
-        box_replace // nftMap.nft_id
+        box_replace // nft_map.nft_id
+        // nft_map.owner = app_global_get("owner") [box]
+        load 6 // box key nft_map
+        pushint 16 // offset
+        pushbytes "owner"
+        app_global_get
+        box_replace // nft_map.owner
       b l2_end
       l2_else:
       // else:
-        // box<NftData> nftMap_ = OpenBox(itob(asset_id)) [slot 7]
+        // assert(nft_map.owner == Txn.Sender)
+        load 6 // box key nft_map
+        pushint 16 // offset
+        pushint 32 // size
+        box_extract // nft_map.owner
+        txn Sender
+        ==
+        assert
+        // box<NftData> nft_map_ = OpenBox(itob(asset_id)) [slot 7]
         load 2 // asset_id
         itob
         dup
         box_len
         assert // exists
-        pushint 16
+        pushint 48
         ==
         assert // len(box) == {self.struct_name}.size
-        store 7 // nftMap_
-        // nftMap_.price = price [box]
-        load 7 // box key nftMap_
+        store 7 // nft_map_
+        // nft_map_.price = price [box]
+        load 7 // box key nft_map_
         pushint 8 // offset
         load 1 // price
         itob
-        box_replace // nftMap_.price
-        // nftMap_.nft_id = asset_id [box]
-        load 7 // box key nftMap_
+        box_replace // nft_map_.price
+        // nft_map_.nft_id = asset_id [box]
+        load 7 // box key nft_map_
         pushint 0 // offset
         load 2 // asset_id
         itob
-        box_replace // nftMap_.nft_id
+        box_replace // nft_map_.nft_id
       l2_end: // end
     // exit(1)
     pushint 1
@@ -322,7 +340,7 @@ main:
     dup
     box_len
     assert // exists
-    pushint 16
+    pushint 48
     ==
     assert // len(box) == {self.struct_name}.size
     store 4 // nft_map
@@ -335,7 +353,6 @@ main:
     pushint 0
     !=
     assert // The nft price cannot be zero
-    
     // bytes box_key = concat(Txn.Sender, itob(asset_id)) [slot 5]
     txn Sender
     load 3 // asset_id
@@ -416,13 +433,13 @@ main:
     load 2 // quantity
     *
     store 10 // payment_amount
-    // assert(Gtxn[0].Amount == (payment_amount + 10000), "Must send make payment to the owner")
+    // assert(Gtxn[0].Amount == (payment_amount + 10000), "Payment amount equal payment amount plus fees")
     gtxn 0 Amount
     load 10 // payment_amount
     pushint 10000
     +
     ==
-    assert // Must send make payment to the owner
+    assert // Payment amount equal payment amount plus fees
     // inner_group:
       itxn_begin
       // inner_txn:
@@ -447,9 +464,11 @@ main:
         // TypeEnum: Pay
         pushint 1 // Pay
         itxn_field TypeEnum
-        // Receiver: app_global_get("owner")
-        pushbytes "owner"
-        app_global_get
+        // Receiver: nft_map.owner
+        load 4 // box key nft_map
+        pushint 16 // offset
+        pushint 32 // size
+        box_extract // nft_map.owner
         itxn_field Receiver
         // Amount: payment_amount
         load 10 // payment_amount
@@ -460,6 +479,79 @@ main:
       // end inner_txn
       itxn_submit
     // end inner_group
+    // nft_map.owner = buyer [box]
+    load 4 // box key nft_map
+    pushint 16 // offset
+    load 1 // buyer
+    box_replace // nft_map.owner
+    // exit(1)
+    pushint 1
+    return
+  
+  
+  // block resell_nft
+  main__resell_nft:
+    // assert(Gtxn[0].AssetAmount == 1, "AssetAmount must equal 1")
+    gtxn 0 AssetAmount
+    pushint 1
+    ==
+    assert // AssetAmount must equal 1
+    // int asset_id = Gtxn[0].XferAsset [slot 1]
+    gtxn 0 XferAsset
+    store 1 // asset_id
+    // int box_exists [slot 2]
+    // int box_length [slot 3]
+    // box_exists, box_length = box_len(itob(asset_id))
+    load 1 // asset_id
+    itob
+    box_len
+    store 2 // box_exists
+    store 3 // box_length
+    // remove if you want any kind of nft to be put up for sale
+    // assert(box_length > 0, "nft was not created by artist")
+    load 3 // box_length
+    pushint 0
+    >
+    assert // nft was not created by artist
+    // int price = btoi(Txn.ApplicationArgs[1]) [slot 4]
+    txna ApplicationArgs 1
+    btoi
+    store 4 // price
+    // assert(price > 0, "selling price must be greater than zero")
+    load 4 // price
+    pushint 0
+    >
+    assert // selling price must be greater than zero
+    // box<NftData> nft_map = OpenBox(itob(asset_id)) [slot 5]
+    load 1 // asset_id
+    itob
+    dup
+    box_len
+    assert // exists
+    pushint 48
+    ==
+    assert // len(box) == {self.struct_name}.size
+    store 5 // nft_map
+    // nft_map.owner = Txn.Sender [box]
+    load 5 // box key nft_map
+    pushint 16 // offset
+    txn Sender
+    box_replace // nft_map.owner
+    // assert(Global.GroupSize == 2, "Maximum number of txns must be 2")
+    global GroupSize
+    pushint 2
+    ==
+    assert // Maximum number of txns must be 2
+    // assert(Gtxn[0].AssetReceiver == Global.CurrentApplicationAddress, "the receiver must be the current application address")
+    gtxn 0 AssetReceiver
+    global CurrentApplicationAddress
+    ==
+    assert // the receiver must be the current application address
+    // assert(Gtxn[0].AssetSender != Global.CurrentApplicationAddress, "the sender must not be the app address")
+    gtxn 0 AssetSender
+    global CurrentApplicationAddress
+    !=
+    assert // the sender must not be the app address
     // exit(1)
     pushint 1
     return
