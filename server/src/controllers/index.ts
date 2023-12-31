@@ -1,3 +1,3 @@
 import * as authControllers from "./auth";
-
-export {authControllers}
+import * as nftControllers from "./nft";
+export {authControllers, nftControllers};
