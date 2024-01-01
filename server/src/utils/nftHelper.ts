@@ -132,6 +132,16 @@ const getAssetsForAddress = async (
   }
 };
 
+const fundAccount = async (account: algosdk.Account, amount: number = 100) => {
+  await algokit.ensureFunded(
+    {
+      accountToFund: account.addr,
+      minSpendingBalance: algokit.algos(amount),
+    },
+    getClient()
+  );
+};
+
 
 
 export {
@@ -141,5 +151,6 @@ export {
   getAppRootDir,
   getIndexerClient,
   uint64ToBigEndianByteArray,
-  getAssetsForAddress
+  getAssetsForAddress,
+  fundAccount,
 };

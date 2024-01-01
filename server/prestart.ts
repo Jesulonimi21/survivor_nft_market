@@ -4,8 +4,13 @@ import {getClient,
 import fs from "fs";
 import * as algokit from "@algorandfoundation/algokit-utils";
 import path from "path";
+import { SuggestedParamsWithMinFee } 
+  from "algosdk/dist/types/types/transactions/base";
 
 const creatorAccount = algosdk.generateAccount();
+
+const textEncoder = new TextEncoder();
+
 const createGasStation = async () => {
   const approvalProgramStr = fs
     .readFileSync("../contracts/src/build/gas_station.teal")
@@ -123,11 +128,63 @@ const writeToEnvFile = (data: string) => {
 
   fs.writeFileSync(envFilePath, data);
 };
+const optContractIntoAssets = async (nftContractId: number): Promise<void> => {
+  const client = getClient();
+  const clearProgramStr = fs
+    .readFileSync("../contracts/src/build/clear.teal")
+    .toString();
+  const ESCROW_HUSK = fs
+    .readFileSync( "../contracts/src//build/artist.teal")
+    .toString();
+  const params: SuggestedParamsWithMinFee = await client
+    .getTransactionParams()
+    .do();
+  const approvalProgram = await compileProgram(client, ESCROW_HUSK);
+
+  const clearProgram = await compileProgram(client, clearProgramStr);
+  console.log({
+    artistApprovalProgram: approvalProgram.length,
+    artistClearProgram: clearProgram.length,
+  });
+  const strType = algosdk.ABIAddressType.from("address");
+  const appArgs = [
+    textEncoder.encode(Buffer.from("assets_opt_in").toString()),
+    approvalProgram,
+    clearProgram,
+  ];
+  const from = creatorAccount.addr;
+  const appCallTxn = algosdk.makeApplicationNoOpTxn(
+    from,
+    { ...params, fee: params.minFee },
+    nftContractId,
+    appArgs,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    [
+      {
+        appIndex: nftContractId,
+        name: strType.encode(algosdk.getApplicationAddress(nftContractId)),
+      },
+    ]
+  );
+
+  const txTest = await client
+    .sendRawTransaction(appCallTxn.signTxn(creatorAccount.sk))
+    .do();
+
+  await waitForConfirmation(client, txTest.txId);
+  console.log({ assetsOptIn: txTest });
+};
 
 
 (async() =>{
   const gasStationId = await createGasStation();
   const nftContractId = await create_nft_contract(gasStationId);
+  await optContractIntoAssets(nftContractId);
   console.log({gasStationId, nftContractId});
   const stringToWrite = `creator=${algosdk.secretKeyToMnemonic(
     creatorAccount.sk

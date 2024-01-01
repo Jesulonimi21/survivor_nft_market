@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 jest",
     "start": "nodemon ./src/index.ts",
     "prestart": "ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 ts-node ./prestart.ts",
     "lint:fix": "npx eslint --fix ./prestart.ts"
@@ -41,6 +41,7 @@
     "eslint-plugin-typescript": "^0.14.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
+    "pactum": "^3.5.1",
     "ts-jest": "^29.1.1",
     "typescript": "^5.3.3"
   }

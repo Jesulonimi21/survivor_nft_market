@@ -1,19 +1,23 @@
 import { Request, Response } from "express";
 import algosdk from "algosdk";
 import { getAssetsForAddress, getClient } from "../utils/nftHelper";
-import { SuggestedParamsWithMinFee } from "algosdk/dist/types/types/transactions/base";
+import { SuggestedParamsWithMinFee }
+  from "algosdk/dist/types/types/transactions/base";
 import dotenv from "dotenv";
 
 dotenv.config();
 const textEncoder = new TextEncoder();
 export const getCreate = async (req: Request, res: Response) => {
+  console.log(req.body);
+  console.log(req.file);
   try{
     const unitName = req.body.unitName;
     const assetName = req.body.assetName;
     const assetURL = req.body.assetURL;
     const assetMetadataHash = req.body.assetMetadataHash;
-    const price = algosdk.encodeUint64(req.body.price);
-    const isFractionalNft = algosdk.encodeUint64(req.body.isFractionalNft);
+    const price = algosdk.encodeUint64(parseInt(req.body.price));
+    const isFractionalNft =
+     algosdk.encodeUint64(parseInt(req.body.isFractionalNft));
     const balanceForBoxCreated = 0;
     const artistAddress = req.body.artistAddress;
     const nftContractId = Number(process.env.nftContractId);
@@ -91,8 +95,9 @@ export const getCreate = async (req: Request, res: Response) => {
 
     const signedCreatorTxn = Buffer.from(
       txns[1].signTxn(creatorAccount.sk)
-    ).toString("base64"); ;
-    const encodedArtistTxn  = Buffer.from(algosdk.encodeUnsignedTransaction(txns[0])).toString(
+    ).toString("base64"); 
+    const encodedArtistTxn = 
+      Buffer.from(algosdk.encodeUnsignedTransaction(txns[0])).toString(
         "base64"
       );
 
@@ -115,7 +120,7 @@ export const sendCreate = async(req: Request, res: Response) => {
       Buffer.from(signedCreatorTxn, "base64"),
     ];
     const txTest = await client.sendRawTransaction(signedTxns).do();
-    res.status(200).json(txTest.txId);
+    res.status(200).json({txId: txTest.txId});
   }catch(error){
     res.status(400).json(error);
   }
