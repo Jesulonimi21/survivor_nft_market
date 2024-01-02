@@ -1,4 +1,4 @@
-import express = require("express");
+import express from "express";
 import  { auth, nft }  from "./routes/index";
 import multer from "multer";
 import path from "path";
@@ -50,5 +50,5 @@ app.use(nft);
 
 
 
-
+console.log("started");
 export default app.listen(7001);

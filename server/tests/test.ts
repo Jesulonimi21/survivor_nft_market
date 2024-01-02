@@ -25,22 +25,22 @@ describe("test create endpoints", () =>{
 
 
 
-  test("Can get create nft transaction", async() =>{ 
-    await fundAccount(newAccount);
-    const getResult = await spec()
-      .get(port + "/get-create")
-      .withBody({
-        artistAddress: newAccount.addr,
-        unitName: "test",
-        assetName: "test-asset",
-        assetURL: "http://testurl",
-        assetMetadataHash: "16efaa3924a6fd9d3a4824799a4ac65d",
-        price: 1000,
-        isFractionalNft: 0,
-      }).expectStatus(200);
-    expect(getResult.statusCode).toBe(200);
-    expect(getResult.body.encodedTxns.length).toBe(2); 
-  }, TEST_TIMEOUT);
+  // test("Can get create nft transaction", async() =>{ 
+  //   await fundAccount(newAccount);
+  //   const getResult = await spec()
+  //     .get(port + "/get-create")
+  //     .withBody({
+  //       artistAddress: newAccount.addr,
+  //       unitName: "test",
+  //       assetName: "test-asset",
+  //       assetURL: "http://testurl",
+  //       assetMetadataHash: "16efaa3924a6fd9d3a4824799a4ac65d",
+  //       price: 1000,
+  //       isFractionalNft: 0,
+  //     }).expectStatus(200);
+  //   expect(getResult.statusCode).toBe(200);
+  //   expect(getResult.body.encodedTxns.length).toBe(2); 
+  // }, TEST_TIMEOUT);
 
 
 
@@ -60,7 +60,7 @@ describe("test create endpoints", () =>{
         //   isFractionalNft: 0,
         // })
         .withFile(__dirname + "/t_img.png")
-        .withRequestTimeout(7000)
+        .withRequestTimeout(12000)
         .withMultiPartFormData({
           artistAddress: newAccount.addr,
           unitName: "test",

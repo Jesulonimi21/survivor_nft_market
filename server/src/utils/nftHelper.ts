@@ -142,6 +142,31 @@ const fundAccount = async (account: algosdk.Account, amount: number = 100) => {
   );
 };
 
+const constructMetadataJsonFile = (decimals: number, imageUri:string,
+  image_integrity: string, image_mimetype: string): unknown => {
+  return {
+    "title": "Token Metadata",
+    "type": "object",
+    "properties": {
+      "name": "surcicors",
+      "decimals": `${decimals}`,
+      "description": "survivors",
+      "image": imageUri,
+      "image_integrity": image_integrity,
+      "image_mimetype": image_mimetype,
+      "background_color":"#ffffff",
+      "external_url": "https://survivors.io",
+      "external_url_integrity": "sha256 of file",
+      "external_url_mimetype":"text/html",
+      "animation_url": "none",
+      "animation_url_integrity": "none",
+      "animation_url_mimetype": "none",
+      "properties": "will_be_added",
+      "extra_metadata": "extra_metadata",
+    }
+  };
+};
+
 
 
 export {
@@ -153,4 +178,5 @@ export {
   uint64ToBigEndianByteArray,
   getAssetsForAddress,
   fundAccount,
+  constructMetadataJsonFile
 };

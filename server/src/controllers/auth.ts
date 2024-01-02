@@ -18,7 +18,8 @@ export const signUp = async (req: Request, res: Response) => {
   const phone = req.body.phone;
   const url = createAccount;  
   axios
-    .post(url, {password, username, email, phone}, { headers: { "Content-Type": "multipart/form-data" } })
+    .post(url, {password, username, email, phone},
+      { headers: { "Content-Type": "multipart/form-data" } })
     .then((response) => {
       res.status(201).json(response.data);
       res.end();
