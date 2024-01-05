@@ -9,7 +9,9 @@ import { create_nft_contract,
   optAccountIntoAsset,
   fundAccount,
   getBalance,
-  sellNft
+  sellNft,
+  getAllNfts,
+  getAssetsForApp
 } from "./test_helper";
 import algosdk from "algosdk";
 
@@ -26,6 +28,7 @@ describe("tests", () =>{
     await optContractIntoAssets(nftContractId);
     console.log({nftContractId});
     globalTestAccount = algosdk.generateAccount();
+    console.log(globalTestAccount.addr);
     purchaserAccount = algosdk.generateAccount();
     // await create_nft(gasStationId, nftContractId);
     // await create_nft(gasStationId, nftContractId);
@@ -155,6 +158,8 @@ describe("tests", () =>{
       assetData.assets![assetData.assets!.length - 1 ]!.assetId as number,
       globalTestAccount
     );
+    console.log(await getAllNfts(nftContractId, "begin"));
+    console.log(await getAssetsForApp( assetData.app));
     await expect(
       buy_nft(
         Number(assetData.assets![assetData.assets!.length - 1]!.assetId),

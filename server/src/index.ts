@@ -18,8 +18,6 @@ const fileStorage = multer.diskStorage({
 const fileFilter = (_req: express.Request,
   file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if(file.mimetype == "image/png"){
-    console.log(file);
-    console.log("Received file mime tyoe");
     cb(null, true);
   }else{
     cb(null, false);

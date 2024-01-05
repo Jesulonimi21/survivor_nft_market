@@ -167,7 +167,100 @@ const constructMetadataJsonFile = (decimals: number, imageUri:string,
   };
 };
 
+const getAllNfts = async (appId: number, nextToken: string) => {
+  const indexer = getIndexerClient();
+  if (!nextToken) {
+    console.log("enterred return statement");
+    return [undefined];
+  }
+  const allArtists = await indexer
+    .searchForApplicationBoxes(appId)
+    .nextToken(nextToken === "begin" ? "" : nextToken)
+    .do();
+  console.log(allArtists);
+  const allAssets = await Promise.all(
+    allArtists.boxes.map(async (artist) => {
+      // const boxName = strType.encode(artist)
+      try {
+        const boxValue = await algokit.getAppBoxValue(
+          appId,
+          artist.name,
+          getClient()
+        );
+        console.log({ boxValue, for: "using artist name" });
+        const tupleCodec = new algosdk.ABITupleType([
+          new algosdk.ABIUintType(64),
+        ]);
+        const decodedBoxValue: ABIValue[] = tupleCodec.decode(
+          boxValue
+        ) as ABIValue[];
+        const artistAddress = algosdk.encodeAddress(artist.name);
+        const assetsInfo = await getAssetsForAddress(
+          Number(appId),
+          algosdk.encodeAddress(artist.name)
+        );
+        return {
+          artistAddress,
+          appId: decodedBoxValue[0],
+          assetsInfo,
+        };
+      } catch (error) {
+        return undefined;
+      }
+    })
+  );
+  const updatedAllAssets = allAssets.concat(
+    await getAllNfts(appId, allArtists.nextToken)
+  );
+  const allDefinedAssets = [];
+  updatedAllAssets.forEach((first) => {
+    if (first != undefined) {
+      allDefinedAssets.push(first);
+    }
+  });
 
+  return allDefinedAssets;
+};
+
+const readNftData = async (
+  appId: number,
+  nftId: number
+): Promise<{ nftId: number; price: number; owner: string }> => {
+  const boxName = algosdk.encodeUint64(nftId);
+  const boxValue = await algokit.getAppBoxValue(appId, boxName, getClient());
+  const tupleCodec = new algosdk.ABITupleType([
+    new algosdk.ABIUintType(64),
+    new algosdk.ABIUintType(64),
+    new algosdk.ABIAddressType(),
+  ]);
+  const decodedBoxValue: ABIValue[] = tupleCodec.decode(boxValue) as ABIValue[];
+
+  return {
+    nftId: Number(decodedBoxValue[0]),
+    price: Number(decodedBoxValue[1]),
+    owner: decodedBoxValue[2] as string,
+  };
+};
+
+
+const getAssetsForApp = async (
+  appId: number
+): Promise<Array<{ nftId: number; price: number; owner: string }>> => {
+  const appAddress = algosdk.getApplicationAddress(appId);
+  const indexer = getIndexerClient();
+  const accountAssetInfo = await indexer.lookupAccountAssets(appAddress).do();
+  const assetsInfos = await Promise.all(
+    accountAssetInfo.assets.map(async (asset) => {
+      try {
+        const nftData = await readNftData(appId, asset["asset-id"]);
+        return nftData;
+      } catch (error) {
+        return undefined;
+      }
+    })
+  );
+  return assetsInfos.filter((el) => el != undefined);
+};
 
 export {
   waitForConfirmation,
@@ -178,5 +271,7 @@ export {
   uint64ToBigEndianByteArray,
   getAssetsForAddress,
   fundAccount,
-  constructMetadataJsonFile
+  constructMetadataJsonFile,
+  getAllNfts,
+  getAssetsForApp,
 };
