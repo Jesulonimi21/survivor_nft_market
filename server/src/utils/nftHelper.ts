@@ -20,13 +20,7 @@ const waitForConfirmation = async function (
       pendingInfo["confirmed-round"] !== null &&
       pendingInfo["confirmed-round"] > 0
     ) {
-      // Got the completed Transaction
-      console.log(
-        "Transaction " +
-          txId +
-          " confirmed in round " +
-          pendingInfo["confirmed-round"]
-      );
+    
       break;
     }
     lastround++;
@@ -109,13 +103,11 @@ const getAssetsForAddress = async (
     const decodedBoxValue: ABIValue[] = tupleCodec.decode(
       boxValue
     ) as ABIValue[];
-    console.log(Number(decodedBoxValue[0]));
 
     const appAddress = algosdk.getApplicationAddress(
       Number(decodedBoxValue[0])
     );
     const indexer = getIndexerClient();
-    console.log(appAddress);
     const accountAssetInfo = await indexer.lookupAccountAssets(appAddress).do();
     const assets = accountAssetInfo.assets.map(
       (el: { "asset-id": number; amount: number }) => {
@@ -177,7 +169,6 @@ const getAllNfts = async (appId: number, nextToken: string) => {
     .searchForApplicationBoxes(appId)
     .nextToken(nextToken === "begin" ? "" : nextToken)
     .do();
-  console.log(allArtists);
   const allAssets = await Promise.all(
     allArtists.boxes.map(async (artist) => {
       // const boxName = strType.encode(artist)
@@ -187,7 +178,6 @@ const getAllNfts = async (appId: number, nextToken: string) => {
           artist.name,
           getClient()
         );
-        console.log({ boxValue, for: "using artist name" });
         const tupleCodec = new algosdk.ABITupleType([
           new algosdk.ABIUintType(64),
         ]);
@@ -201,7 +191,7 @@ const getAllNfts = async (appId: number, nextToken: string) => {
         );
         return {
           artistAddress,
-          appId: decodedBoxValue[0],
+          appId: Number(decodedBoxValue[0]),
           assetsInfo,
         };
       } catch (error) {

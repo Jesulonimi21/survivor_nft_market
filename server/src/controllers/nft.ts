@@ -21,6 +21,9 @@ const strType = algosdk.ABIAddressType.from("address");
 
 export const getCreate = async (req: Request, res: Response) => {
   try{
+    if(!req.file){
+      throw {message: "Please make sure to add a valid file", statusCode: 403};
+    }
     const unitName = req.body.unitName;
     const assetName = req.body.assetName;
     // const assetURL = req.body.assetURL;
@@ -51,7 +54,7 @@ export const getCreate = async (req: Request, res: Response) => {
     const metadata = await ipfs.putFile([
       new File([JSON.stringify(metadataJson)], "metadata.json"),
     ]);
-    await fs.promises.unlink(fs.readFileSync((req.file?.path) as string));
+    await fs.promises.unlink(req.file?.path);
     const appArgs = [
       textEncoder.encode(Buffer.from("create_nft").toString()),
       textEncoder.encode(Buffer.from(assetName).toString()),
@@ -131,7 +134,11 @@ export const getCreate = async (req: Request, res: Response) => {
     res.status(200).json({ encodedTxns: [encodedArtistTxn, signedCreatorTxn] });
   }catch(error){
     console.log(error);
-    res.status(400).json(error);
+    if(error.message){
+      res.status(error.statusCode).json({error: error.message});
+    }else{  
+      res.status(400).json({error});
+    }
   }
 
 };
@@ -151,12 +158,13 @@ export const sendCreate = async(req: Request, res: Response) => {
     res.status(200).json({txId: txTest.txId});
   }catch(error){
     console.log({error});
-    res.status(400).json(error);
+    res.status(400).json({error});
   }
 }; 
 
 
 export const getPurchase = async (req: Request, res: Response) => {
+  console.log("In Get purchase");
   try{
     const client = getClient();
     const params: SuggestedParamsWithMinFee = await client
@@ -252,7 +260,7 @@ export const getPurchase = async (req: Request, res: Response) => {
 
   }catch(error){
     console.error(error);
-    res.status(400).json(error);
+    res.status(400).json({error});
   }
 };
 
@@ -271,19 +279,21 @@ export const sendPurchase = async(req: Request, res: Response) => {
     console.log({txTest});
     res.status(200).json({txId: txTest.txId});
   }catch(error){
-    console.log({error});
-    res.status(400).json(error);
+    console.error({error});
+    res.status(400).json({error});
   }
 };
 
 
 export const getNfts = async(req: Request, res: Response) =>{
   try{
-    const appId = Number(req.body.appId);
+    const appId = Number(process.env.nftContractId);
+    console.log("received");
     const nfts = await getAllNfts(appId, "begin");
-    res.status(200).json(nfts);
+    res.status(200).json({nfts});
   }catch(error){
-    res.status(400).json(error);
+    console.error(error);
+    res.status(400).json({error});
   }
 };
 
@@ -343,7 +353,7 @@ export const getResell = async(req: Request, res: Response) =>{
     );
     res.status(200).json({ encodedTxns });
   } catch (error) {
-    res.status(400).json(error);
+    res.status(400).json({error});
   }
 };
 
@@ -359,6 +369,63 @@ export const sendSell = async (req: Request, res: Response) => {
     res.status(200).json({ txId: txTest.txId });
   } catch (error) {
     console.log({ error });
-    res.status(400).json(error);
+    res.status(400).json({error});
+  }
+};
+
+
+export const getPrice = async (req: Request, res: Response) => {
+  try {
+    const client = getClient();
+    const params = await client.getTransactionParams().do();
+    const price = Number(req.body.price);
+    const nftId = Number(req.body.nftId);
+    const appId = Number(req.body.appId);
+    const from = req.body.seller;
+    const appArgs = [
+      textEncoder.encode(Buffer.from("set_price").toString()),
+      algosdk.encodeUint64(price),
+      algosdk.encodeUint64(nftId),
+    ];
+    const foreignAssetsArray = [nftId];
+    const appCallTxn = algosdk.makeApplicationNoOpTxn(
+      from,
+      { ...params, fee: params.minFee },
+      appId,
+      appArgs,
+      undefined,
+      undefined,
+      foreignAssetsArray,
+      undefined,
+      undefined,
+      undefined,
+      [
+        {
+          appIndex: appId,
+          name: algosdk.encodeUint64(nftId),
+        },
+      ]
+    );
+    const encodedTxn = Buffer.from(
+      algosdk.encodeUnsignedTransaction(appCallTxn)
+    ).toString("base64");
+
+    res.status(200).json({encodedTxn});
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({error});
+  }
+};
+
+export const sendPrice = async(req: Request, res: Response) => {
+  try{
+    console.log("RECEIVED SEND PRICE");
+    const client = getClient();
+    const appCallTxn = Buffer.from(req.body.txn, "base64");
+    const txTest = await client.sendRawTransaction(appCallTxn).do();
+    console.log({ txTest });
+    res.status(200).json({ txId: txTest.txId });
+  }catch(error){
+    res.status(400).json({error});
   }
 };

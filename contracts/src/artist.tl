@@ -152,6 +152,7 @@ block main:
             end
         end
         nft_map.owner = buyer
+        nft_map.price = 0
         exit(1)
     end
 
