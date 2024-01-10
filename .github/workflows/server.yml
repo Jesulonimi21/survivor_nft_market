@@ -49,7 +49,7 @@ jobs:
              yarn set version 1.22.19 &&
              npm install &&
              yarn art &&
-             echo " NFT CPNTRACT ID IS $nftContractId" &&
+             echo " NFT CPNTRACT ID IS $nftContractId"
             #  yarn test &&
             #  echo " NFT CPNTRACT ID IS $nftContractId" &&
             #  algokit localnet stop
