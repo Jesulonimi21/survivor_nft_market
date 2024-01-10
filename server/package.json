@@ -6,7 +6,7 @@
   "scripts": {
     "test": "ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
     "start": "nodemon ./src/index.ts",
-    "art": "ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 ts-node ./prestart.ts",
+    "art": "ALGOD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ALGOD_SERVER=http://localhost ALGOD_PORT=4001 ts-node ./src/prestart.ts",
     "lint:fix": "npx eslint --fix ./prestart.ts",
     "lint": "npx eslint ./*/*.ts"
   },
