@@ -56,7 +56,7 @@ jobs:
           PROOF: ${{secrets.PROOF}}
         working-directory: server
       - run: |
-            echo " NFT CPNTRACT ID IS $nftContractId"
+            echo " NFT CPNTRACT ID IS $nftContractId AND CREATOR IS $creator"
             yarn test &&
             echo " NFT CPNTRACT ID IS $nftContractId" &&
             algokit localnet stop
