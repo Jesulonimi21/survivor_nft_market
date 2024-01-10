@@ -15,7 +15,7 @@ jobs:
         run: |
             npm install -g yarn &&
             yarn set version 1.22.19 &&
-            yarn install --immutable &&
+            npm install &&
             yarn lint
         working-directory: server
 
@@ -48,7 +48,7 @@ jobs:
         run: |
              npm install -g yarn &&
              yarn set version 1.22.19 &&
-             yarn install --immutable &&
+             npm install &&
              yarn prestart &&
              yarn test &&
              algokit localnet stop
