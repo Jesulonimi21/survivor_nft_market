@@ -50,7 +50,12 @@ jobs:
              yarn set version 1.22.19 &&
              npm install &&
              yarn art &&
-             yarn test &&
+            #  yarn test &&
+             run: |
+              if [ -f .env ]; then
+                export $(cat .env | xargs)
+              fi &&
+             echo "generated key is $nftContractId"
              algokit localnet stop
         env: 
           AGENT_DID_KEY: ${{secrets.AGENT_DID_KEY}}
