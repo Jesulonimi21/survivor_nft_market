@@ -176,7 +176,6 @@ const getAllNfts = async (
 > => {
   const indexer = getIndexerClient();
   if (!nextToken) {
-    console.log("enterred return statement");
     return [undefined];
   }
   const allArtists = await indexer

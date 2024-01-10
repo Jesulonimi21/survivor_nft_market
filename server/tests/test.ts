@@ -29,7 +29,6 @@ describe("test create endpoints", () =>{
     } else {
       port = `http://localhost:${addressInfo!.port}`;
     }
-    console.log;
   });
 
 
@@ -78,7 +77,6 @@ describe("test create endpoints", () =>{
   test(
     "Can sign and send valid create txn gotten from server",
     async () => {
-      console.log("second test");
       await fundAccount(newAccount);
       const getResult = await spec()
         .get(port + "/get-create")
@@ -101,7 +99,6 @@ describe("test create endpoints", () =>{
       const signedAlgoSendTxn = Buffer.from(
         algoSendTxn.signTxn(newAccount.sk)
       ).toString("base64");
-      console.log({ signedAlgoSendTxn });
 
       const sendResult = await spec()
         .post(port + "/send-create")
@@ -131,7 +128,6 @@ describe("test create endpoints", () =>{
       Number(process.env.nftContractId),
       newAccount.addr
     );
-    console.log({nftInfo});
     const result = await spec()
       .get(port + "/get-price")
       .withBody({
@@ -140,12 +136,6 @@ describe("test create endpoints", () =>{
         seller: newAccount.addr,
         price: 1000
       });
-    console.log({
-      appId: nftInfo.app,
-      assetId: nftInfo.assets[0]!.assetId,
-      seller: newAccount.addr,
-    });
-    console.log(result.body);
     expect(result.body.error).toBeUndefined();
     expect(result.statusCode).toBe(200);
     const txn = algosdk.decodeUnsignedTransaction(
@@ -179,21 +169,18 @@ describe("test create endpoints", () =>{
       .expectStatus(200);
     expect(nftResult.body.nfts).toBeDefined();
     // const firstAsset = nftResult.body.nfts[0];
-    console.log(nftResult.body);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const nftToBuy = nftResult.body.nfts.reduce(
       (
         previous: AllNfts,
         current: AllNfts
       ) => {
-        console.log({ current });
         if (current.artistAddress == newAccount.addr) {
           return current;
         }
         return previous;
       }
     );
-    console.log({nftToBuy});
     const result = await spec()
       .get(port + "/get-purchase")
       .withBody({
@@ -217,7 +204,6 @@ describe("test create endpoints", () =>{
       .expectStatus(200);
     const firstAsset = nftResult.body.nfts[0];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    console.log({ addr: newAccount.addr });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const nftToBuy = 
     nftResult.body.nfts.reduce((previous: AllNfts, current: AllNfts) => {
@@ -235,19 +221,6 @@ describe("test create endpoints", () =>{
         buyer: newAccount.addr,
       })
       .expectStatus(200);
-    console.log({
-      appId: firstAsset.appId,
-      assetId: firstAsset.assetsInfo.assets[0].assetId,
-      quantity: 1,
-      buyer: newAccount.addr,
-      appAddr: algosdk.getApplicationAddress(firstAsset.appId),
-    });
-    const indexer = getIndexerClient();
-    console.log(
-      await indexer
-        .lookupAccountAssets(algosdk.getApplicationAddress(firstAsset.appId))
-        .do()
-    );
     const optInTxn = algosdk.decodeUnsignedTransaction(
       Buffer.from(result.body.optInTxn, "base64")
     );

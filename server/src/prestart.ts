@@ -26,7 +26,6 @@ const createGasStation = async () => {
   const localBytes = 1;
   const localInts = 1;
   const approvalProgram = await compileProgram(client, approvalProgramStr);
-  console.log("cmp ar");
   const clearProgram = await compileProgram(client, clearProgramStr);
   const onComplete = algosdk.OnApplicationComplete.NoOpOC;
   const from = creatorAccount.addr;
@@ -50,15 +49,12 @@ const createGasStation = async () => {
     []
   );
 
-  const createAppTxId = createAppTxn.txID().toString();
-  console.log(createAppTxId);
+  // const createAppTxId = createAppTxn.txID().toString();
   const signedTxn = createAppTxn.signTxn(creatorAccount.sk);
-  console.log("Signed transaction with txID: %s", createAppTxId);
   const sentTX = await client.sendRawTransaction(signedTxn).do();
   await waitForConfirmation(client, sentTX.txId);
   const ptx = await client.pendingTransactionInformation(sentTX.txId).do();
   const appId = ptx["application-index"];
-  console.log("Gas station created");
   await algokit.ensureFunded(
     {
       accountToFund: algosdk.getApplicationAddress(appId),
@@ -84,7 +80,6 @@ const create_nft_contract = async (gasStationId: number) => {
   const localBytes = 0;
   const localInts = 0;
   const approvalProgram = await compileProgram(client, approvalProgramStr);
-  console.log("cmp ar", approvalProgram.length);
   const clearProgram = await compileProgram(client, clearProgramStr);
   const onComplete = algosdk.OnApplicationComplete.NoOpOC;
   const appArgs = [
@@ -105,15 +100,12 @@ const create_nft_contract = async (gasStationId: number) => {
     globalBytes,
     appArgs
   );
-  const createAppTxId = createAppTxn.txID().toString();
-  console.log(createAppTxId);
+  // const createAppTxId = createAppTxn.txID().toString();
   const signedTxn = createAppTxn.signTxn(creatorAccount.sk);
-  console.log("Signed transaction with txID: %s", createAppTxId);
   const sentTX = await client.sendRawTransaction(signedTxn).do();
   await waitForConfirmation(client, sentTX.txId);
   const ptx = await client.pendingTransactionInformation(sentTX.txId).do();
   const appId = ptx["application-index"];
-  console.log("NFT contract created");
   await algokit.ensureFunded(
     {
       accountToFund: algosdk.getApplicationAddress(appId),
@@ -142,10 +134,6 @@ const optContractIntoAssets = async (nftContractId: number): Promise<void> => {
   const approvalProgram = await compileProgram(client, ESCROW_HUSK);
 
   const clearProgram = await compileProgram(client, clearProgramStr);
-  console.log({
-    artistApprovalProgram: approvalProgram.length,
-    artistClearProgram: clearProgram.length,
-  });
   const strType = algosdk.ABIAddressType.from("address");
   const appArgs = [
     textEncoder.encode(Buffer.from("assets_opt_in").toString()),
@@ -177,7 +165,6 @@ const optContractIntoAssets = async (nftContractId: number): Promise<void> => {
     .do();
 
   await waitForConfirmation(client, txTest.txId);
-  console.log({ assetsOptIn: txTest });
 };
 
 
@@ -185,7 +172,6 @@ const optContractIntoAssets = async (nftContractId: number): Promise<void> => {
   const gasStationId = await createGasStation();
   const nftContractId = await create_nft_contract(gasStationId);
   await optContractIntoAssets(nftContractId);
-  console.log({gasStationId, nftContractId});
   const stringToWrite = `creator=${algosdk.secretKeyToMnemonic(
     creatorAccount.sk
   )}

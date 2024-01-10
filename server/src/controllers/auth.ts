@@ -26,9 +26,8 @@ export const signUp = async (req: Request, res: Response) => {
     })
     .catch((error) => {
       console.error(error);
-      console.log(error.message);
       //    res.writeHead(400, { error: JSON.stringify(error) });
-      const strE = JSON.stringify(error);
+      // const strE = JSON.stringify(error);
       res.write(JSON.stringify(error.message));  
       res.end();
     });

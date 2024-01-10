@@ -105,14 +105,12 @@ const create_nft_contract = async(gasStationId: number) =>{
     globalBytes,
     appArgs,
   );
-  const createAppTxId = createAppTxn.txID().toString();
+  // const createAppTxId = createAppTxn.txID().toString();
   const signedTxn = createAppTxn.signTxn(creatorAccount.sk);
-  console.log("Signed transaction with txID: %s", createAppTxId);
   const sentTX = await client.sendRawTransaction(signedTxn).do();
   await waitForConfirmation(client, sentTX.txId);
   const ptx = await client.pendingTransactionInformation(sentTX.txId).do();
   const appId = ptx["application-index"];
-  console.log("NFT contract created");
   await algokit.ensureFunded(
     {
       accountToFund: algosdk.getApplicationAddress(appId),
@@ -208,7 +206,6 @@ const create_nft = async(gasStationId: number, nftContractId: number,
   const txTest = await client.sendRawTransaction(stxns).do();
 
   await waitForConfirmation(client, txTest.txId);
-  console.log({ createNft: txTest });
   await getAssetsForAddress(nftContractId, from);
 };
 
@@ -256,7 +253,6 @@ const set_price = async (price: number, assetId: number, artistAppId:number,
   const txTest = await client.sendRawTransaction(stxns).do();
 
   await waitForConfirmation(client, txTest.txId);
-  console.log({ set_price: txTest });
 };
 
 
@@ -303,10 +299,6 @@ const optContractIntoAssets = async (
   const approvalProgram = await compileProgram(client, ESCROW_HUSK);
 
   const clearProgram = await compileProgram(client, clearProgramStr);
-  console.log({
-    artistApprovalProgram: approvalProgram.length,
-    artistClearProgram: clearProgram.length,
-  });
   const strType = algosdk.ABIAddressType.from("address");
   const appArgs = [
     textEncoder.encode(Buffer.from("assets_opt_in").toString()),
@@ -338,7 +330,7 @@ const optContractIntoAssets = async (
     .do();
 
   await waitForConfirmation(client, txTest.txId);
-  console.log({ assetsOptIn: txTest });
+
 };
 
 const getAssetsForAddress = async (
@@ -358,13 +350,10 @@ const getAssetsForAddress = async (
     const decodedBoxValue: ABIValue[] = tupleCodec.decode(
       boxValue
     ) as ABIValue[];
-    console.log(Number(decodedBoxValue[0]));
-
     const appAddress = algosdk.getApplicationAddress(
       Number(decodedBoxValue[0])
     );
     const indexer = getIndexerClient();
-    console.log(appAddress);
     const accountAssetInfo = await indexer.lookupAccountAssets(appAddress).do();
     const assets = accountAssetInfo.assets.map(
       (el: { "asset-id": number; amount: number }) => {
@@ -453,7 +442,6 @@ const buy_nft = async (
   const txTest = await client.sendRawTransaction(stxns).do();
 
   await waitForConfirmation(client, txTest.txId);
-  console.log({ buynft: txTest });
 };
 const optAccountIntoAsset = async (
   assetIndex: number,
@@ -478,9 +466,7 @@ const optAccountIntoAsset = async (
     signer: algosdk.makeBasicAccountTransactionSigner(creatorAcc),
   });
   const stxns = (await atc.gatherSignatures()).map((stxn) => stxn);
-  const txTest = await client.sendRawTransaction(stxns).do();
-
-  console.log({ optAccountIntoAsset: txTest });
+  await client.sendRawTransaction(stxns).do();
 };
 
 const fundAccount = async(account: algosdk.Account, amount:number = 100 ) =>{
@@ -566,8 +552,7 @@ const sellNft = async(appId: number,
     signer: algosdk.makeBasicAccountTransactionSigner(sellerAccount),
   });
   const stxns = (await atc.gatherSignatures()).map((stxn) => stxn);
-  const txTest = await client.sendRawTransaction(stxns).do();
-  console.log({ assetSold: txTest });
+  await client.sendRawTransaction(stxns).do();
 };
 
 const getAllNfts = async (
@@ -587,7 +572,6 @@ const getAllNfts = async (
 > => {
   const indexer = getIndexerClient();
   if (!nextToken) {
-    console.log("enterred return statement");
     return [undefined];
   }
   const allArtists = await indexer

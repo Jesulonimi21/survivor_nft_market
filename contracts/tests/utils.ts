@@ -19,12 +19,6 @@ const waitForConfirmation = async function (
       pendingInfo["confirmed-round"] > 0
     ) {
       // Got the completed Transaction
-      console.log(
-        "Transaction " +
-          txId +
-          " confirmed in round " +
-          pendingInfo["confirmed-round"]
-      );
       break;
     }
     lastround++;

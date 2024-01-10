@@ -12,7 +12,7 @@ dotenv.config();
 class IpfsHelper {
   client ;
   constructor() {}
-  parseProof = async (data: string) => {
+  parseProof = async (data: string): unknown => {
     const {CarReader} = await import("@ipld/car");
     const Delegation = await import("@ucanto/core/delegation");
     const blocks = [];
@@ -24,11 +24,8 @@ class IpfsHelper {
   };
 
   initialize = async () => {
-    console.log("before dynamic import");
     const {ed25519: Signer} = await import("@ucanto/principal");
-    console.log("after 120.9.0 dynamic import");
     const Client = await import("@web3-storage/w3up-client");
-    console.log("after q dynamic import");
     const principal = Signer.parse(process.env.AGENT_PRIVATE_KEY as string);
     this.client = await Client.create({ principal });
     // Add proof that this agent has been delegated capabilities on the space

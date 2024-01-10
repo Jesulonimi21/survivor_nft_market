@@ -48,7 +48,6 @@ export const getCreate = async (req: Request, res: Response) => {
     );
     const ipfs = new IpfsHelper();
     await ipfs.initialize();
-    console.log(req.file.path);
     const { data } = await ipfs.putFile([
       new File([fs.readFileSync(req.file?.path as string)], "img.png"),
     ]);
@@ -163,17 +162,14 @@ export const sendCreate = async(req: Request, res: Response) => {
       Buffer.from(signedCreatorTxn, "base64"),
     ];
     const txTest = await client.sendRawTransaction(signedTxns).do();
-    console.log({txTest});
     res.status(200).json({txId: txTest.txId});
   }catch(error){
-    console.log({error});
     res.status(400).json({error});
   }
 }; 
 
 
 export const getPurchase = async (req: Request, res: Response) => {
-  console.log("In Get purchase");
   try{
     const client = getClient();
     const params: SuggestedParamsWithMinFee = await client
@@ -285,7 +281,6 @@ export const sendPurchase = async(req: Request, res: Response) => {
     ];
     await client.sendRawTransaction(optInTxn).do();
     const txTest = await client.sendRawTransaction(signedTxns).do();
-    console.log({txTest});
     res.status(200).json({txId: txTest.txId});
   }catch(error){
     console.error({error});
@@ -297,7 +292,6 @@ export const sendPurchase = async(req: Request, res: Response) => {
 export const getNfts = async(req: Request, res: Response) =>{
   try{
     const appId = Number(process.env.nftContractId);
-    console.log("received");
     const nfts = await getAllNfts(appId, "begin");
     res.status(200).json({nfts});
   }catch(error){
@@ -374,10 +368,8 @@ export const sendSell = async (req: Request, res: Response) => {
     const appCallTxn = Buffer.from(req.body.txns[1], "base64");
     const signedTxns = [assetSend, appCallTxn];
     const txTest = await client.sendRawTransaction(signedTxns).do();
-    console.log({ txTest });
     res.status(200).json({ txId: txTest.txId });
   } catch (error) {
-    console.log({ error });
     res.status(400).json({error});
   }
 };
@@ -428,11 +420,9 @@ export const getPrice = async (req: Request, res: Response) => {
 
 export const sendPrice = async(req: Request, res: Response) => {
   try{
-    console.log("RECEIVED SEND PRICE");
     const client = getClient();
     const appCallTxn = Buffer.from(req.body.txn, "base64");
     const txTest = await client.sendRawTransaction(appCallTxn).do();
-    console.log({ txTest });
     res.status(200).json({ txId: txTest.txId });
   }catch(error){
     res.status(400).json({error});
