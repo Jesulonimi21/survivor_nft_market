@@ -51,7 +51,7 @@ jobs:
              npm install -g yarn &&
              yarn set version 1.22.19 &&
              npm install &&
-             yarn art && 
+             yarn art
         env: 
           AGENT_DID_KEY: ${{secrets.AGENT_DID_KEY}}
           AGENT_PRIVATE_KEY: ${{secrets.AGENT_PRIVATE_KEY}}
