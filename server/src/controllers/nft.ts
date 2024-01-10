@@ -43,7 +43,6 @@ export const getCreate = async (req: Request, res: Response) => {
     const artistAddress = req.body.artistAddress;
     const nftContractId = Number(process.env.nftContractId);
     const gasStationId = Number(process.env.gasStationId);
-    console.log({ creatorAccount: process.env.creator});
     const creatorAccount = algosdk.mnemonicToSecretKey(
       String(process.env.creator)
     );

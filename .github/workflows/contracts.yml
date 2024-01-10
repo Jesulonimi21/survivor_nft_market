@@ -1,54 +1,54 @@
-# name: Zapping Actions Demo
-# run-name: ${{ github.actor }} is running GitHub Actions 🚀
-# on: [push]
-# jobs:
-#   Lint-Job:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: "18"
-#           registry-url: "https://registry.npmjs.org"
+name: Zapping Actions Demo
+run-name: ${{ github.actor }} is running GitHub Actions 🚀
+on: [push]
+jobs:
+  Lint-Job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
 
-#       - name: install and lint
-#         run: |
-#             npm install -g yarn &&
-#             yarn set version 1.22.19 &&
-#             yarn install --immutable &&
-#             yarn lint
-#         working-directory: contracts
+      - name: install and lint
+        run: |
+            npm install -g yarn &&
+            yarn set version 1.22.19 &&
+            yarn install --immutable &&
+            yarn lint
+        working-directory: contracts
 
 
-#   Start-LocalNet:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/setup-node@v3
-#       - uses: actions/checkout@v2
-#         with:
-#           node-version: 18
-#           registry-url: "https://registry.npmjs.org"
-#       - run: pwd
-#       - run: echo "🍏 This job's status is ${{ job.status }}."
-#       - run: cd contracts
-#       - uses: actions/setup-python@v2
-#         with:
-#           python-version: "3.11.1"
-#       - run: curl -sSL https://install.python-poetry.org | python3 -
-#       - run: python -m pip install --user pipx
-#       - run: export PATH="$HOME/.local/bin:$PATH"
-#       - run: pipx install algokit
-#       - run: pipx install tealish
-#       - run: pipx ensurepath
-#       - run: algokit doctor
-#       - run: algokit localnet start
+  Start-LocalNet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+        with:
+          node-version: 18
+          registry-url: "https://registry.npmjs.org"
+      - run: pwd
+      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - run: cd contracts
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.11.1"
+      - run: curl -sSL https://install.python-poetry.org | python3 -
+      - run: python -m pip install --user pipx
+      - run: export PATH="$HOME/.local/bin:$PATH"
+      - run: pipx install algokit
+      - run: pipx install tealish
+      - run: pipx ensurepath
+      - run: algokit doctor
+      - run: algokit localnet start
       
-#       - name: Run Unit Test
-#         run: |
-#              npm install -g yarn &&
-#              yarn set version 1.22.19 &&
-#              yarn install --immutable &&
-#              yarn test &&
-#              algokit localnet stop
-#         working-directory: contracts
+      - name: Run Unit Test
+        run: |
+             npm install -g yarn &&
+             yarn set version 1.22.19 &&
+             yarn install --immutable &&
+             yarn test &&
+             algokit localnet stop
+        working-directory: contracts
      
