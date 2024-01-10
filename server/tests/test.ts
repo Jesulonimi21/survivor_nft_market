@@ -3,11 +3,20 @@ import app from "../src/index";
 import algosdk  from "algosdk";
 import { AddressInfo } from 'net';
 import { fundAccount, getAssetsForAddress,
-  waitForConfirmation, getClient, getIndexerClient } from "../src/utils/nftHelper";
+  waitForConfirmation, 
+  getClient, getIndexerClient } from "../src/utils/nftHelper";
 
 const TEST_TIMEOUT = 10000 * 120;
 jest.useFakeTimers();
 
+type AllNfts = {
+  assetsInfo: {
+    app: number;
+    assets: [{ assetId?: number; isFractionalft?: boolean }?];
+  };
+  appId: number;
+  artistAddress: string;
+};
 
 describe("test create endpoints", () =>{
   let port: string; 
@@ -127,13 +136,13 @@ describe("test create endpoints", () =>{
       .get(port + "/get-price")
       .withBody({
         appId: nftInfo.app,
-        nftId: nftInfo.assets[0].assetId,
+        nftId: nftInfo.assets[0]!.assetId,
         seller: newAccount.addr,
         price: 1000
       });
     console.log({
       appId: nftInfo.app,
-      assetId: nftInfo.assets[0].assetId,
+      assetId: nftInfo.assets[0]!.assetId,
       seller: newAccount.addr,
     });
     console.log(result.body);
@@ -172,14 +181,18 @@ describe("test create endpoints", () =>{
     // const firstAsset = nftResult.body.nfts[0];
     console.log(nftResult.body);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const nftToBuy = nftResult.body.nfts.reduce((previous, current) => {
-      console.log({ current });
-      if (current.artistAddress == newAccount.addr) {
-        return current;
+    const nftToBuy = nftResult.body.nfts.reduce(
+      (
+        previous: AllNfts,
+        current: AllNfts
+      ) => {
+        console.log({ current });
+        if (current.artistAddress == newAccount.addr) {
+          return current;
+        }
+        return previous;
       }
-      return previous;
-
-    });
+    );
     console.log({nftToBuy});
     const result = await spec()
       .get(port + "/get-purchase")
@@ -206,7 +219,8 @@ describe("test create endpoints", () =>{
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.log({ addr: newAccount.addr });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const nftToBuy = nftResult.body.nfts.reduce((previous, current) => {
+    const nftToBuy = 
+    nftResult.body.nfts.reduce((previous: AllNfts, current: AllNfts) => {
       if (current.artistAddress == newAccount.addr) {
         return current;
       }
@@ -268,12 +282,14 @@ describe("test create endpoints", () =>{
       .expectStatus(200);
     expect(nftResult.body.nfts).toBeDefined();
     // const firstAsset = nftResult.body.nfts[0];
-    const nftToSell = nftResult.body.nfts.reduce((previous, current) => {
-      if (current.artistAddress == newAccount.addr) {
-        return current;
-      }
-      return previous;
-    });
+    const nftToSell = 
+      nftResult.body.nfts.reduce((previous: AllNfts, current: AllNfts) => {
+
+        if (current.artistAddress == newAccount.addr) {
+          return current;
+        }
+        return previous;
+      });
     const result = await spec()
       .get(port + "/get-sell")
       .withBody({
@@ -295,12 +311,13 @@ describe("test create endpoints", () =>{
       .withRequestTimeout(12000)
       .expectStatus(200);
     // const firstAsset = nftResult.body.nfts[0];
-    const nftToSell = nftResult.body.nfts.reduce((previous, current) => {
-      if (current.artistAddress == newAccount.addr) {
-        return current;
-      }
-      return previous;
-    });
+    const nftToSell = 
+      nftResult.body.nfts.reduce((previous: AllNfts, current: AllNfts) => {
+        if (current.artistAddress == newAccount.addr) {
+          return current;
+        }
+        return previous;
+      });
     const result = await spec()
       .get(port + "/get-sell")
       .withBody({

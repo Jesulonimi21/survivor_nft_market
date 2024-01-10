@@ -11,26 +11,34 @@ import { SuggestedParamsWithMinFee }
   from "algosdk/dist/types/types/transactions/base";
 import dotenv from "dotenv";
 import  IpfsHelper from "../utils/IpfsHelpers";
-import { File } from "web3.storage";
+// import { File } from "web3.storage";
 import fs from "fs";
 
 dotenv.config();
 const textEncoder = new TextEncoder();
 const strType = algosdk.ABIAddressType.from("address");
-
+type ServerError = {
+  message?: string;
+  statusCode: number;
+}
 
 export const getCreate = async (req: Request, res: Response) => {
-  try{
-    if(!req.file){
-      throw {message: "Please make sure to add a valid file", statusCode: 403};
+  const { File } = await import("web3.storage");
+  try {
+    if (!req.file) {
+      throw {
+        message: "Please make sure to add a valid file",
+        statusCode: 403,
+      };
     }
     const unitName = req.body.unitName;
     const assetName = req.body.assetName;
     // const assetURL = req.body.assetURL;
     const assetMetadataHash = req.body.assetMetadataHash;
     const price = algosdk.encodeUint64(parseInt(req.body.price));
-    const isFractionalNft =
-     algosdk.encodeUint64(parseInt(req.body.isFractionalNft));
+    const isFractionalNft = algosdk.encodeUint64(
+      parseInt(req.body.isFractionalNft)
+    );
     const balanceForBoxCreated = 0;
     const artistAddress = req.body.artistAddress;
     const nftContractId = Number(process.env.nftContractId);
@@ -41,10 +49,10 @@ export const getCreate = async (req: Request, res: Response) => {
     const ipfs = new IpfsHelper();
     await ipfs.initialize();
     console.log(req.file.path);
-    const {data} = await ipfs.putFile(
-      [new File([fs.readFileSync((req.file?.path) as string)], "img.png")]
-    );
-    
+    const { data } = await ipfs.putFile([
+      new File([fs.readFileSync(req.file?.path as string)], "img.png"),
+    ]);
+
     const metadataJson = constructMetadataJsonFile(
       0,
       `https://${data}.ipfs.w3s.link`,
@@ -59,8 +67,9 @@ export const getCreate = async (req: Request, res: Response) => {
       textEncoder.encode(Buffer.from("create_nft").toString()),
       textEncoder.encode(Buffer.from(assetName).toString()),
       textEncoder.encode(Buffer.from(assetMetadataHash).toString()),
-      textEncoder.encode(Buffer.
-        from(`https://${metadata.data}.ipfs.w3s.link`).toString()),
+      textEncoder.encode(
+        Buffer.from(`https://${metadata.data}.ipfs.w3s.link`).toString()
+      ),
       textEncoder.encode(Buffer.from(unitName).toString()),
       price,
       isFractionalNft,
@@ -125,20 +134,20 @@ export const getCreate = async (req: Request, res: Response) => {
 
     const signedCreatorTxn = Buffer.from(
       txns[1].signTxn(creatorAccount.sk)
-    ).toString("base64"); 
-    const encodedArtistTxn = 
-      Buffer.from(algosdk.encodeUnsignedTransaction(txns[0])).toString(
-        "base64"
-      );
+    ).toString("base64");
+    const encodedArtistTxn = Buffer.from(
+      algosdk.encodeUnsignedTransaction(txns[0])
+    ).toString("base64");
 
     res.status(200).json({ encodedTxns: [encodedArtistTxn, signedCreatorTxn] });
-  }catch(error){
-    console.log(error);
-    if(error.message){
-      res.status(error.statusCode).json({error: error.message});
-    }else{  
-      res.status(400).json({error});
+  } catch (error: unknown) {
+    const serverError = error as ServerError;
+    if (serverError.message) {
+      res.status(serverError.statusCode).json({ error: serverError.message });
+    } else {
+      res.status(400).json({ error });
     }
+
   }
 
 };
@@ -188,7 +197,7 @@ export const getPurchase = async (req: Request, res: Response) => {
     );
     const assetData = assetsData.find(el => el.nftId == assetId);
     if(assetData == undefined){
-      throw "Asset id does not belong to this app";
+      throw {message: "Asset id does not belong to this app", statusCode: 403};
     }
     const price = assetData.price;
     const owner = assetData.owner;

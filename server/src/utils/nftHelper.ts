@@ -159,7 +159,21 @@ const constructMetadataJsonFile = (decimals: number, imageUri:string,
   };
 };
 
-const getAllNfts = async (appId: number, nextToken: string) => {
+const getAllNfts = async (
+  appId: number,
+  nextToken: string | undefined
+): Promise<
+  [
+    {
+      assetsInfo: {
+        app: number;
+        assets: [{ assetId?: number; isFractionalft?: boolean }?];
+      };
+      appId: number;
+      artistAddress: string;
+    }?
+  ]
+> => {
   const indexer = getIndexerClient();
   if (!nextToken) {
     console.log("enterred return statement");
@@ -202,7 +216,16 @@ const getAllNfts = async (appId: number, nextToken: string) => {
   const updatedAllAssets = allAssets.concat(
     await getAllNfts(appId, allArtists.nextToken)
   );
-  const allDefinedAssets = [];
+  const allDefinedAssets: [
+    {
+      assetsInfo: {
+        app: number;
+        assets: [{ assetId?: number; isFractionalft?: boolean }?];
+      };
+      appId: number;
+      artistAddress: string;
+    }?
+  ] = [];
   updatedAllAssets.forEach((first) => {
     if (first != undefined) {
       allDefinedAssets.push(first);
@@ -240,7 +263,7 @@ const getAssetsForApp = async (
   const indexer = getIndexerClient();
   const accountAssetInfo = await indexer.lookupAccountAssets(appAddress).do();
   const assetsInfos = await Promise.all(
-    accountAssetInfo.assets.map(async (asset) => {
+    accountAssetInfo.assets.map(async (asset: {"asset-id": number}) => {
       try {
         const nftData = await readNftData(appId, asset["asset-id"]);
         return nftData;

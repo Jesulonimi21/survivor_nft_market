@@ -54,7 +54,6 @@ const createGasStation = async () => {
     []
   );
 
-  const createAppTxId = createAppTxn.txID().toString();
   const signedTxn = createAppTxn.signTxn(creatorAccount.sk);
   const sentTX = await client.sendRawTransaction(signedTxn).do();
   await waitForConfirmation(client, sentTX.txId);
@@ -571,9 +570,23 @@ const sellNft = async(appId: number,
   console.log({ assetSold: txTest });
 };
 
-const getAllNfts = async(appId: number, nextToken: string) =>{
+const getAllNfts = async (
+  appId: number,
+  nextToken: string | undefined
+): Promise<
+  [
+    {
+      assetsInfo: {
+        app: number;
+        assets: [{ assetId?: number; isFractionalft?: boolean }?];
+      };
+      appId: number;
+      artistAddress: string;
+    }?
+  ]
+> => {
   const indexer = getIndexerClient();
-  if(!nextToken){
+  if (!nextToken) {
     console.log("enterred return statement");
     return [undefined];
   }
@@ -581,37 +594,51 @@ const getAllNfts = async(appId: number, nextToken: string) =>{
     .searchForApplicationBoxes(appId)
     .nextToken(nextToken === "begin" ? "" : nextToken)
     .do();
-  console.log(allArtists);
-  const allAssets = await Promise.all(allArtists.boxes.map(async(artist) =>{
-    // const boxName = strType.encode(artist)
-    try{
-      const boxValue = 
-      await algokit.getAppBoxValue(appId, artist.name, getClient());
-      console.log({ boxValue, for: "using artist name" });
-      const tupleCodec = 
-      new algosdk.ABITupleType([new algosdk.ABIUintType(64)]);
-      const decodedBoxValue: ABIValue[] = 
-      tupleCodec.decode(boxValue) as ABIValue[];
-      const artistAddress = algosdk.encodeAddress(artist.name);
-      const assetsInfo = await getAssetsForAddress(
-        Number(appId),
-        algosdk.encodeAddress(artist.name)
-      );
-      return {
-        artistAddress,
-        appId: decodedBoxValue[0],
-        assetsInfo,
-      };
-    }catch(error){
-      return undefined;
-    }
-  }));
+  const allAssets = await Promise.all(
+    allArtists.boxes.map(async (artist) => {
+      // const boxName = strType.encode(artist)
+      try {
+        const boxValue = await algokit.getAppBoxValue(
+          appId,
+          artist.name,
+          getClient()
+        );
+        const tupleCodec = new algosdk.ABITupleType([
+          new algosdk.ABIUintType(64),
+        ]);
+        const decodedBoxValue: ABIValue[] = tupleCodec.decode(
+          boxValue
+        ) as ABIValue[];
+        const artistAddress = algosdk.encodeAddress(artist.name);
+        const assetsInfo = await getAssetsForAddress(
+          Number(appId),
+          algosdk.encodeAddress(artist.name)
+        );
+        return {
+          artistAddress,
+          appId: Number(decodedBoxValue[0]),
+          assetsInfo,
+        };
+      } catch (error) {
+        return undefined;
+      }
+    })
+  );
   const updatedAllAssets = allAssets.concat(
     await getAllNfts(appId, allArtists.nextToken)
   );
-  const allDefinedAssets = [];
-  updatedAllAssets.forEach((first) =>{
-    if(first != undefined){
+  const allDefinedAssets: [
+    {
+      assetsInfo: {
+        app: number;
+        assets: [{ assetId?: number; isFractionalft?: boolean }?];
+      };
+      appId: number;
+      artistAddress: string;
+    }?
+  ] = [];
+  updatedAllAssets.forEach((first) => {
+    if (first != undefined) {
       allDefinedAssets.push(first);
     }
   });
@@ -624,7 +651,7 @@ const getAssetsForApp = async(appId: number) =>{
   const indexer = getIndexerClient();
   const accountAssetInfo = await indexer.lookupAccountAssets(appAddress).do();
   const assetsInfos =  await 
-  Promise.all(accountAssetInfo.assets.map(async(asset) =>{
+  Promise.all(accountAssetInfo.assets.map(async(asset: {"asset-id": number}) =>{
     try{
       const nftData = await readNftData(appId, asset["asset-id"]);
       return nftData;

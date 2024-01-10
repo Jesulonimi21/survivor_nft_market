@@ -1,14 +1,16 @@
-require("esbuild-register");
+
+// @ts-nocheck
 
 // import { ed25519 as Signer } from "@ucanto/principal";
-// import * as Client from "@web3-storage/w3up-client";
+
 // import * as Delegation from "@ucanto/core/delegation";
 import dotenv from "dotenv";
+
 // import { CarReader } from "@ipld/car";
 
 dotenv.config();
 class IpfsHelper {
-  client?;
+  client ;
   constructor() {}
   parseProof = async (data: string) => {
     const {CarReader} = await import("@ipld/car");

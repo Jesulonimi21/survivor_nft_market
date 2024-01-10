@@ -1,6 +1,6 @@
 import algosdk from "algosdk";
 import {getClient,
-  compileProgram, waitForConfirmation } from "./src/utils/nftHelper";
+  compileProgram, waitForConfirmation } from "./utils/nftHelper";
 import fs from "fs";
 import * as algokit from "@algorandfoundation/algokit-utils";
 import path from "path";
