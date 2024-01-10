@@ -43,14 +43,13 @@ jobs:
       - run: pipx ensurepath
       - run: algokit doctor
       - run: algokit localnet start
-      
       - name: Run Unit Test
         run: |
              npm install -g yarn &&
              yarn set version 1.22.19 &&
              npm install &&
              yarn art &&
-             echo "$nftContractId"
+             echo "$nftContractId" &&
             #  yarn test &&
              algokit localnet stop
         env: 
