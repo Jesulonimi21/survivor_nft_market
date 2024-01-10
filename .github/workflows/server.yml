@@ -49,7 +49,7 @@ jobs:
              npm install -g yarn &&
              yarn set version 1.22.19 &&
              npm install &&
-             yarn prestart &&
+             yarn art &&
              yarn test &&
              algokit localnet stop
         env: 
