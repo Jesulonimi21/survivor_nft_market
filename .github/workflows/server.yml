@@ -64,4 +64,7 @@ jobs:
           AGENT_DID_KEY: ${{secrets.AGENT_DID_KEY}}
           AGENT_PRIVATE_KEY: ${{secrets.AGENT_PRIVATE_KEY}}
           PROOF: ${{secrets.PROOF}}
+          nftContractId: $nftContractId
+          creator: $creator
+          gasStationId: $gasStationId
         working-directory: server

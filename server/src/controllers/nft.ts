@@ -43,9 +43,11 @@ export const getCreate = async (req: Request, res: Response) => {
     const artistAddress = req.body.artistAddress;
     const nftContractId = Number(process.env.nftContractId);
     const gasStationId = Number(process.env.gasStationId);
+    console.log({ creatorAccount: process.env.creator, env: process.env });
     const creatorAccount = algosdk.mnemonicToSecretKey(
       String(process.env.creator)
     );
+    
     const ipfs = new IpfsHelper();
     await ipfs.initialize();
     const { data } = await ipfs.putFile([
