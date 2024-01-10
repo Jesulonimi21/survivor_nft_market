@@ -6,6 +6,7 @@ import * as algokit from "@algorandfoundation/algokit-utils";
 import path from "path";
 import { SuggestedParamsWithMinFee } 
   from "algosdk/dist/types/types/transactions/base";
+import * as core from "@actions/core";
 
 const creatorAccount = algosdk.generateAccount();
 
@@ -178,5 +179,11 @@ const optContractIntoAssets = async (nftContractId: number): Promise<void> => {
  nftContractId=${nftContractId}
  gasStationId=${gasStationId}
  `;
+  core.exportVariable("nftContractId", `${nftContractId}`);
+  core.exportVariable("gasStationId", `${gasStationId}`);
+  core.exportVariable(
+    "creator",
+    `${algosdk.secretKeyToMnemonic(creatorAccount.sk)}}`
+  );
   writeToEnvFile(stringToWrite);
 })();
