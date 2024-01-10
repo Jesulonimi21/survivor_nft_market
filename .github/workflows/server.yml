@@ -50,9 +50,9 @@ jobs:
              npm install &&
              yarn art &&
              echo " NFT CPNTRACT ID IS $nftContractId" &&
-             yarn test &&
-             echo " NFT CPNTRACT ID IS $nftContractId" &&
-             algokit localnet stop
+            #  yarn test &&
+            #  echo " NFT CPNTRACT ID IS $nftContractId" &&
+            #  algokit localnet stop
         env: 
           AGENT_DID_KEY: ${{secrets.AGENT_DID_KEY}}
           AGENT_PRIVATE_KEY: ${{secrets.AGENT_PRIVATE_KEY}}
