@@ -4,7 +4,7 @@ import algosdk  from "algosdk";
 import { AddressInfo } from 'net';
 import { fundAccount, getAssetsForAddress,
   waitForConfirmation, 
-  getClient, getIndexerClient } from "../src/utils/nftHelper";
+  getClient } from "../src/utils/nftHelper";
 
 const TEST_TIMEOUT = 10000 * 120;
 jest.useFakeTimers();
@@ -202,7 +202,7 @@ describe("test create endpoints", () =>{
       .get(port + "/get-all-nfts")
       .withRequestTimeout(12000)
       .expectStatus(200);
-    const firstAsset = nftResult.body.nfts[0];
+    // const firstAsset = nftResult.body.nfts[0];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const nftToBuy = 
