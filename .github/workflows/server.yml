@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: "20.9.0"  # Specify the desired Node.js version
+          node-version: 20.9.0  # Specify the desired Node.js version
           registry-url: "https://registry.npmjs.org"
       - uses: actions/checkout@v2
         with:
