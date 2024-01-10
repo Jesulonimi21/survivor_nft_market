@@ -183,7 +183,7 @@ const optContractIntoAssets = async (nftContractId: number): Promise<void> => {
   core.exportVariable("gasStationId", `${gasStationId}`);
   core.exportVariable(
     "creator",
-    `${algosdk.secretKeyToMnemonic(creatorAccount.sk)}}`
+    `${algosdk.secretKeyToMnemonic(creatorAccount.sk)}`
   );
   writeToEnvFile(stringToWrite);
 })();
