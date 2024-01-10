@@ -16,7 +16,7 @@ jobs:
             npm install -g yarn &&
             yarn set version 1.22.19 &&
             npm install &&
-            yarn lint
+            npm run lint
         working-directory: server
 
 
