@@ -140,6 +140,7 @@ export const getCreate = async (req: Request, res: Response) => {
 
     res.status(200).json({ encodedTxns: [encodedArtistTxn, signedCreatorTxn] });
   } catch (error: unknown) {
+    console.error(error);
     const serverError = error as ServerError;
     if (serverError.message && serverError.statusCode) {
       res.status(serverError.statusCode).json({ error: serverError.message });
