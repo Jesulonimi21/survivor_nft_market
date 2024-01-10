@@ -51,17 +51,14 @@ jobs:
              npm install -g yarn &&
              yarn set version 1.22.19 &&
              npm install &&
-             yarn art &&
-             echo " NFT CPNTRACT ID IS $nftContractId"   
+             yarn art && 
         env: 
           AGENT_DID_KEY: ${{secrets.AGENT_DID_KEY}}
           AGENT_PRIVATE_KEY: ${{secrets.AGENT_PRIVATE_KEY}}
           PROOF: ${{secrets.PROOF}}
         working-directory: server
       - run: |
-            echo "NFT CPNTRACT ID IS $nftContractId AND CREATOR IS $creator"
             yarn test &&
-            echo " NFT CPNTRACT ID IS $nftContractId" &&
             algokit localnet stop
         env: 
           AGENT_DID_KEY: ${{secrets.AGENT_DID_KEY}}
